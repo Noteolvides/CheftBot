@@ -1,6 +1,6 @@
 import logging
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 
 from main import MENU, RECETAS, LISTA_DE_LA_COMPRA, ACTION
 
@@ -32,18 +32,12 @@ logger = logging.getLogger(__name__)
 def start(update, context):
     """Select an action: Adding parent/child or show data."""
     update.message.reply_text(ENTRY_POINT)
-    buttons = [[
-        InlineKeyboardButton(text='Menu', callback_data=str(MENU)),
-        InlineKeyboardButton(text='Recetas', callback_data=str(RECETAS))
-    ], [
-        InlineKeyboardButton(text='Lista de la compra', callback_data=str(LISTA_DE_LA_COMPRA))
-    ]]
-    keyboard = InlineKeyboardMarkup(buttons)
+    reply_keyboard = [["MENU"], ["RECETAS"], ["LISTA_DE_LA_COMPRA"]]
 
-    update.message.reply_text(text=ENTRY_POINT_2, reply_markup=keyboard )
-    update.message.reply_text(text=" ")
+    update.message.reply_text(ENTRY_POINT_2, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
 
     return ACTION
+
 
 # por si alguien se pierde puede decir help y hacer lo que quiera
 def help(update, context):
@@ -65,13 +59,17 @@ def listPurchase(update, context):
 
 
 def recetas(update, context):
-    update.callback_query.edit_message_text(text="Estas en recetas")
+    update.message.edit_message_text(text="Estas en recetas")
 
 
 def menu(update, context):
-    """update.message.reply_text("Estas en menu")"""
-    update.callback_query.edit_message_text(text="Estas en menu")
+    update.message.reply_text("Estas en menu")
 
 
 def stop(update, context):
     update.message.reply_text("Estas en stop")
+
+
+def menu_logic(update, context):
+    update.message.reply_text("Estas en en la logica del menu")
+    return ACTION

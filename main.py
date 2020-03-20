@@ -4,6 +4,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Conve
 
 MENU, RECETAS, LISTA_DE_LA_COMPRA, ACTION = map(chr, range(4))
 
+
 def main():
     # Empezamos el porgrama añadimos nuestro token dado por telegram y añadimos use context para versiones nuevas de
     # Telegram Bot
@@ -16,11 +17,9 @@ def main():
         entry_points=[CommandHandler("start", actions.start), CommandHandler("help", actions.help)],
 
         states={
-            ACTION: [
-                CallbackQueryHandler(actions.menu, pattern='^' + str(MENU) + '$'),
-                CallbackQueryHandler(actions.recetas, pattern='^' + str(RECETAS) + '$'),
-                CallbackQueryHandler(actions.listPurchase, pattern='^' + str(LISTA_DE_LA_COMPRA) + '$'),
-            ],
+            ACTION: [MessageHandler(Filters.regex('^MENU$'), actions.menu),
+                     MessageHandler(Filters.regex('^RECETAS'), actions.recetas),
+                     MessageHandler(Filters.regex('^LISTA_DE_LA_COMPRA'), actions.listPurchase)],
         },
 
         fallbacks=[CommandHandler("stop", actions.stop)]
