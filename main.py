@@ -1,6 +1,8 @@
 import actions
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, CallbackQueryHandler
+
+MENU, RECETAS, LISTA_DE_LA_COMPRA = map(chr, range(3))
 
 
 def main():
@@ -10,13 +12,20 @@ def main():
 
     # Para seleccionar el comando enviado activamos el dispacher
     dp = updater.dispatcher
+    conv_handler = ConversationHandler(
+        # Cada uno de estos comandos enviados con /comando llamara a la funcion
+        entry_points=[CommandHandler("start", actions.start), CommandHandler("help", actions.help)],
 
-    # Cada uno de estos comandos enviados con /comando llamara a la funcion
-    dp.add_handler(CommandHandler("start", actions.start))
-    dp.add_handler(CommandHandler("help", actions.help))
+        states={
+            MENU: [CallbackQueryHandler(actions.menu,pattern='^' + str(MENU) + '$')],
+            RECETAS: [CallbackQueryHandler(actions.menu,pattern='^' + str(RECETAS) + '$')],
+            LISTA_DE_LA_COMPRA: [CallbackQueryHandler(actions.menu,pattern='^' + str(LISTA_DE_LA_COMPRA) + '$')],
+        },
 
-    # Si nos envian un mensaje que sea texto pues llamamos a la funcion echo
-    dp.add_handler(MessageHandler(Filters.text, actions.echo))
+        fallbacks=[CommandHandler("stop", actions.stop)]
+    )
+
+    dp.add_handler(conv_handler)
 
     # si hay error pues funcion de erorr
     dp.add_error_handler(actions.error)
