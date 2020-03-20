@@ -2,7 +2,7 @@ import actions
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler, CallbackQueryHandler
 
-MENU, RECETAS, LISTA_DE_LA_COMPRA, ACTION = map(chr, range(4))
+MENU, LISTA_DE_LA_COMPRA, ACTION, RECEPIE_YES_OR_NO, RECEPIE_STEPS, RECEPIE_FINISH = map(chr, range(6))
 
 
 def main():
@@ -18,8 +18,20 @@ def main():
 
         states={
             ACTION: [MessageHandler(Filters.regex('^MENU$'), actions.menu),
-                     MessageHandler(Filters.regex('^RECETAS'), actions.recetas),
                      MessageHandler(Filters.regex('^LISTA_DE_LA_COMPRA'), actions.listPurchase)],
+            MENU: [
+                MessageHandler(Filters.text, actions.recepie),
+            ],
+            RECEPIE_YES_OR_NO: [
+                MessageHandler(Filters.regex('^Si$'), actions.recepie_yes),
+                MessageHandler(Filters.regex('^No$'), actions.start),
+            ],
+            RECEPIE_STEPS: [
+                MessageHandler(Filters.text, actions.steps),
+            ],
+            RECEPIE_FINISH: [
+                MessageHandler(Filters.text, actions.stepsFinish),
+            ]
         },
 
         fallbacks=[CommandHandler("stop", actions.stop)]
