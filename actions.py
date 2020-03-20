@@ -2,7 +2,7 @@ import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from main import MENU, RECETAS, LISTA_DE_LA_COMPRA
+from main import MENU, RECETAS, LISTA_DE_LA_COMPRA, ACTION
 
 ENTRY_POINT = "Hola soy chefBot tu pinche en la cocina."
 ENTRY_POINT_2 = "Tienes diferentes opcciones para elegir que te gustaria hacer hoy?"
@@ -40,8 +40,10 @@ def start(update, context):
     ]]
     keyboard = InlineKeyboardMarkup(buttons)
 
-    update.message.reply_text(text=ENTRY_POINT_2, reply_markup=keyboard)
+    update.message.reply_text(text=ENTRY_POINT_2, reply_markup=keyboard )
+    update.message.reply_text(text=" ")
 
+    return ACTION
 
 # por si alguien se pierde puede decir help y hacer lo que quiera
 def help(update, context):
@@ -62,13 +64,14 @@ def listPurchase(update, context):
     update.message.reply_text("Estas en la lista de la compra")
 
 
-def recetas(update, contex):
-    update.message.reply_text("Estas en recetas")
+def recetas(update, context):
+    update.callback_query.edit_message_text(text="Estas en recetas")
 
 
-def menu(update, contex):
-    update.message.reply_text("Estas en menu")
+def menu(update, context):
+    """update.message.reply_text("Estas en menu")"""
+    update.callback_query.edit_message_text(text="Estas en menu")
 
 
-def stop(update, contex):
+def stop(update, context):
     update.message.reply_text("Estas en stop")
