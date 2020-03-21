@@ -8,7 +8,7 @@ from main import MENU, LISTA_DE_LA_COMPRA, ACTION, RECEPIE_YES_OR_NO, RECEPIE_ST
 
 # Start
 ENTRY_POINT = "Hola soy chefBot tu pinche en la cocina."
-ENTRY_POINT_2 = "Tienes diferentes opcciones para elegir que te gustaria hacer hoy?"
+ENTRY_POINT_2 = "Tienes diferentes opciones para elegir.\n ¿Qué te gustaria hacer hoy?"
 
 # Error
 INPUT_ERROR = "Te qeuivocaste gueiy"
@@ -19,8 +19,8 @@ MENU_OPTIONS = "Con los ingredientes que ya has comprado puedes hacer las siguie
 # Receta
 RECEPIE_START = "Perfecto, para esta receta vas a necesitar:"
 RECEPIE_READY = "¿Estas listo para empezar?, lo tienes todo \U0001F923"
-RECEPIE_START_STEPS = "Comencemos \U0001F92E"
-RECEPIE_STEPS_FINISH = "POLLASSSS de postre"
+RECEPIE_START_STEPS = "Comencemos \U0001F64C"
+RECEPIE_STEPS_FINISH = "Bienn ya lo has hecho \U0001F61C"
 
 # Activamos el Logger y decimos que el output sea debug.log
 from telegram.ext import ConversationHandler
@@ -41,14 +41,23 @@ STOPPING, SHOWING = map(chr, range(8, 10))
 # Shortcut for ConversationHandler.END
 END = ConversationHandler.END
 
+users = dict()
+
 
 def start(update, context):
+    if users.get(update.message.chat_id) is None:
+        users.update({update.message.chat_id: User()})
     update.message.reply_text(text=ENTRY_POINT)
-    reply_keyboard = [["MENU"], ["LISTA_DE_LA_COMPRA"]]
+    reply_keyboard = [["Menu"], ["Ver la lista de la compra"]]
 
     update.message.reply_text(ENTRY_POINT_2, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+    context.bot.send_animation(chat_id=update.message.chat_id,
+                               animation="https://media.giphy.com/media/XR2huD4XC8h20/giphy.gif", duration=None,
+                               width=None,
+                               height=None, thumb=None, caption=None,
+                               parse_mode=None, disable_notification=False, reply_to_message_id=None, reply_markup=None,
+                               timeout=20)
 
-    context.bot.sendPhoto(chat_id=update.message.chat_id, photo='https://telegram.org/img/t_logo.png')
     return ACTION
 
 
@@ -66,10 +75,6 @@ def error(update, context):
     # Si hay alguno error se lo enviamos al logger
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
-    #reply_keyboard = [["Si :)"]]
-    #update.message.reply_text(text='La has liado', reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-    #start(update, context)
-
 
 def listPurchase(update, context):
     return LISTA_DE_LA_COMPRA
@@ -83,8 +88,6 @@ def menu(update, context):
     reply_keyboard = [[listOfPosibleRecipies[0].title], [listOfPosibleRecipies[1].title], ["Añadir ingredientes"]]
 
     update.message.reply_text(MENU_OPTIONS, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-
-    print(update.message)
 
     return MENU
 
@@ -124,14 +127,11 @@ def recepie_yes(update, context):
     return RECEPIE_STEPS
 
 
-juanjo = User(0, ["huevo", "sal", "aceite"])
-
-
 def steps(update, context):
-    update.message.reply_text(listOfPosibleRecipies[0].instructions[juanjo.step_counter])
-    juanjo.step_counter += 1
+    update.message.reply_text(listOfPosibleRecipies[0].instructions[users.get(update.message.chat_id).step_counter])
+    users.get(update.message.chat_id).step_counter += 1
 
-    if len(listOfPosibleRecipies[0].instructions) == juanjo.step_counter:
+    if len(listOfPosibleRecipies[0].instructions) == users.get(update.message.chat_id).step_counter:
         reply_keyboard = [["Gracias!"]]
         update.message.reply_text(text="Bon apetit",
                                   reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
@@ -140,12 +140,11 @@ def steps(update, context):
     reply_keyboard = [["SI!"]]
     update.message.reply_text(text="¿Lo tienes ya?",
                               reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
-
     return RECEPIE_STEPS
 
 
 def stepsFinish(update, context):
-    juanjo.step_counter = 0
     update.message.reply_text(RECEPIE_STEPS_FINISH)
+    users.get(update.message.chat_id).step_counter = 0
     start(update, context)
     return ACTION

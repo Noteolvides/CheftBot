@@ -8,7 +8,7 @@ MENU, LISTA_DE_LA_COMPRA, ACTION, RECEPIE_YES_OR_NO, RECEPIE_STEPS, RECEPIE_FINI
 def main():
     # Empezamos el porgrama añadimos nuestro token dado por telegram y añadimos use context para versiones nuevas de
     # Telegram Bot
-    updater = Updater("1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58", use_context=True)
+    updater = Updater("852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs", use_context=True)
 
     # Para seleccionar el comando enviado activamos el dispacher
     dp = updater.dispatcher
@@ -18,8 +18,8 @@ def main():
                       MessageHandler(Filters.regex('^Hola$'), actions.start)],
 
         states={
-            ACTION: [MessageHandler(Filters.regex('^MENU$'), actions.menu),
-                     MessageHandler(Filters.regex('^LISTA_DE_LA_COMPRA'), actions.listPurchase)],
+            ACTION: [MessageHandler(Filters.regex('^Menu$'), actions.menu),
+                     MessageHandler(Filters.regex('^Ver la lista de la compra'), actions.menu)],
             MENU: [
                 MessageHandler(Filters.text, actions.recepie),
             ],

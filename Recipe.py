@@ -29,10 +29,10 @@ class Recipe:
         self.quantity = quantity
 
 
-huevoFrito = Recipe("Huevo duro", ["Huevo", "Aceite", "Sal de mi demonio"],
-                    ["Coger una sarten", "Cubre la sarten con aceite", "Pon el fuego alto", "Comer macarrones0"],
-                    [8.00, 5.00])
+huevoFrito = Recipe("Huevo duro", ["Huevo", "Aceite", "Sal"],
+                    ["Coger una sarten", "Cubre la sarten con aceite", "Pon el fuego alto", "Comer macarrones"],
+                    [8.00, 5.00, 9.00])
 
-huevoDuro = Recipe("Huevo frito", ["Huevo", "Aceite", "Sal de mi demonio"],
-                    ["Coger una sarten", "Cubre la sarten con aceite", "Pon el fuego alto", "Comer macarrones0"],
+huevoDuro = Recipe("Huevo frito", ["Huevo", "Aceite", "Sal"],
+                    ["Coger una sarten", "Cubre la sarten con aceite", "Pon el fuego alto", "Comer macarrones"],
                     [8.00, 5.00, 9.00])

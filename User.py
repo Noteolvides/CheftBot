@@ -12,7 +12,6 @@ class User:
     step_counter: int
     ingredients: List[Ingredient]
 
-    def __init__(self, step_counter: int, ingredients: List[Ingredient]) -> None:
-        self.step_counter = step_counter
-        self.ingredients = ingredients
+    def __init__(self) -> None:
+        self.step_counter = 0
 
