@@ -8,13 +8,14 @@ MENU, LISTA_DE_LA_COMPRA, ACTION, RECEPIE_YES_OR_NO, RECEPIE_STEPS, RECEPIE_FINI
 def main():
     # Empezamos el porgrama añadimos nuestro token dado por telegram y añadimos use context para versiones nuevas de
     # Telegram Bot
-    updater = Updater("852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs", use_context=True)
+    updater = Updater("1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58", use_context=True)
 
     # Para seleccionar el comando enviado activamos el dispacher
     dp = updater.dispatcher
     conv_handler = ConversationHandler(
         # Cada uno de estos comandos enviados con /comando llamara a la funcion
-        entry_points=[CommandHandler("start", actions.start), CommandHandler("help", actions.help)],
+        entry_points=[CommandHandler("start", actions.start),
+                      MessageHandler(Filters.regex('^Hola$'), actions.start)],
 
         states={
             ACTION: [MessageHandler(Filters.regex('^MENU$'), actions.menu),
@@ -34,7 +35,9 @@ def main():
             ]
         },
 
-        fallbacks=[CommandHandler("stop", actions.stop)]
+        fallbacks=[CommandHandler("stop", actions.stop),
+                   CommandHandler("start", actions.start),
+                   MessageHandler(Filters.text, actions.noMatch)]
     )
 
     dp.add_handler(conv_handler)
