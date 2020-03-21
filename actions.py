@@ -52,11 +52,11 @@ def start(update, context):
 
     update.message.reply_text(ENTRY_POINT_2, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
     context.bot.send_animation(chat_id=update.message.chat_id,
-                               animation="https://media.giphy.com/media/XR2huD4XC8h20/giphy.gif", duration=None,
+                               animation="https://lh6.googleusercontent.com/HM2ZmlN6KE8G47UdhSHUGizt0vtza4RZt0OhFdRJFOWtIXVi2b_SzwNhCAoTDFNQNhSGGa4htzjqJOOSncdw=w683-h696",
+                               duration=None,
                                width=None,
                                height=None, thumb=None, caption=None,
-                               parse_mode=None, disable_notification=False, reply_to_message_id=None, reply_markup=None,
-                               timeout=20)
+                               parse_mode=None, disable_notification=False, reply_to_message_id=None, reply_markup=None,)
 
     return ACTION
 
@@ -135,6 +135,14 @@ def steps(update, context):
         reply_keyboard = [["Gracias!"]]
         update.message.reply_text(text="Bon apetit",
                                   reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
+        context.bot.send_animation(chat_id=update.message.chat_id,
+                                   animation="https://lh4.googleusercontent.com/RB6bkEGvGcpTg_T0apxUSxh0Ui6yyPY2Qtz0c_0AtqDeo5UNFXNtnCzZ0Zr0hucSMsoN1JUZJnH96C2KvXRT=w683-h696",
+                                   duration=None,
+                                   width=None,
+                                   height=None, thumb=None, caption=None,
+                                   parse_mode=None, disable_notification=False, reply_to_message_id=None,
+                                   reply_markup=None,
+                                   timeout=20)
         return RECEPIE_FINISH
 
     reply_keyboard = [["SI!"]]
