@@ -30,9 +30,9 @@ class Recipe:
 
 
 huevoFrito = Recipe("Huevo duro", ["Huevo", "Aceite", "Sal"],
-                    ["Coger una sarten", "Cubre la sarten con aceite", "Pon el fuego alto", "Comer macarrones"],
+                    ["Coger una sarten", "Cubre la sartén con aceite", "Pon el fuego alto", "Añadir el Huevo a la sarten", "Cuidado que no se te queme", "Cuando este listo sacalo", "Y ya estaria"],
                     [8.00, 5.00, 9.00])
 
 huevoDuro = Recipe("Huevo frito", ["Huevo", "Aceite", "Sal"],
-                    ["Coger una sarten", "Cubre la sarten con aceite", "Pon el fuego alto", "Comer macarrones"],
+                    ["Coger una sarten", "Cubre la sartén con aceite", "Pon el fuego alto", "Añadir el Huevo a la sarten", "Cuidado que no se te queme", "Cuando este listo sacalo", "Y ya estaria"],
                     [8.00, 5.00, 9.00])
