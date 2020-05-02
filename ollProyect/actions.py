@@ -1,10 +1,10 @@
 import logging
 
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Bot
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove
 
-from Recipe import huevoFrito, huevoDuro
-from User import User
-from main import MENU, LISTA_DE_LA_COMPRA, ACTION, RECEPIE_YES_OR_NO, RECEPIE_STEPS, RECEPIE_FINISH
+from ollProyect.Recipe import huevoFrito, huevoDuro
+from ollProyect.User import User
+from ollProyect.main import MENU, LISTA_DE_LA_COMPRA, ACTION, RECEPIE_YES_OR_NO, RECEPIE_STEPS, RECEPIE_FINISH
 
 # Start
 ENTRY_POINT = "Hola soy chefBot tu pinche en la cocina."
@@ -26,7 +26,7 @@ RECEPIE_STEPS_FINISH = "Bienn ya lo has hecho \U0001F61C"
 from telegram.ext import ConversationHandler
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO, filename="debug.log")
+                    level=logging.INFO, filename="../debug.log")
 
 logger = logging.getLogger(__name__)
 
