@@ -10,6 +10,7 @@ CREATE TABLE USER (
 	status	    VARCHAR(255),
 	token	    VARCHAR(255),-->Id de telegram, seria la clave primaria para buscar.
 	created_at	DATE,
+	current_keyboard ();
 	PRIMARY KEY (user_id)
 );
 
