@@ -8,7 +8,7 @@ CREATE TABLE USER (
 	user_id		SERIAL,
 	username	VARCHAR(255),
 	status	    VARCHAR(255),
-	token	    VARCHAR(255),
+	token	    VARCHAR(255),-->Id de telegram, seria la clave primaria para buscar.
 	created_at	DATE,
 	PRIMARY KEY (user_id)
 );
@@ -41,3 +41,7 @@ SELECT u.status FROM USER AS u WHERE u.username; #Queria hacer la query para que
 
 #Si hay error esto a veces ayuda
 SHOW ENGINE INNODB STATUS;
+
+
+#Recetas que el usuario ya ha hecho.ABSOLUTE
+#Lista de la compra
