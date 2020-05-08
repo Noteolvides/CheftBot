@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-This Example will show you how to use register_next_step handler.
-"""
-
-# bot.send_message(chat_id, 'Nice to meet you ' + user.name + '\n Age:' + str(user.age) + '\n Sex:' + user.sex)
-
 
 import telebot
 from chatterbot import ChatBot
@@ -16,23 +9,47 @@ API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
 
 bot = telebot.TeleBot(API_TOKEN)
 
+chatBot = ChatBot(
+    'Chefbot',
+    logic_adapters=[
+        {
+            'import_path': 'food_Adapter.ShoppingChosser',
+        },
+        {
+            'import_path': 'food_Adapter.AddItemShopping',
+        },
+        {
+            'import_path': 'food_Adapter.ShowListShopping',
+        },
+        {
+            'import_path': 'ingredients_adapter.addIngredient',
+        },
+    ],
+)
+
+
+def chooseLogic(input_statement, additional_response_selection_parameters):
+    results = []
+    result = None
+    max_confidence = -1
+    winer = -1
+
+    for i, adapter in enumerate(chatBot.logic_adapters):
+        if adapter.can_process(input_statement):
+
+            output = adapter.process(input_statement, additional_response_selection_parameters)
+            results.append(output)
+
+            if output.confidence > max_confidence:
+                winer = i
+                result = output
+                max_confidence = output.confidence
+
+    print(winer)
+    return result
+
+
 if __name__ == '__main__':
-
-    chatBot = ChatBot(
-        'Chefbot',
-        logic_adapters=[
-            {
-                'import_path': 'food_Adapter.ShoppingChosser',
-            },
-            {
-                'import_path': 'food_Adapter.AddItemShopping',
-            },
-            {
-                'import_path': 'food_Adapter.ShowListShopping',
-            },
-        ],
-    )
-
 
     # Handle '/start' and '/help'
     @bot.message_handler(commands=['help', 'start'])
@@ -51,6 +68,7 @@ if __name__ == '__main__':
         try:
             response_statement = Statement(text=message.text, id=chat_id)
             bot_response = chatBot.generate_response(response_statement)
+            chooseLogic(response_statement)
         except AttributeError:
             bot_response = Statement(text="Sry could you repeat")
 

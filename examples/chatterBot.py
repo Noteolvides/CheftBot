@@ -11,7 +11,11 @@ if __name__ == '__main__':
         'Terminal'
     )
 
-    trainer = UbuntuCorpusTrainer(bot)
+    trainer = ChatterBotCorpusTrainer(bot)
+
+    trainer.train(
+        "chatterbot.corpus.english"
+    )
 
 
 
