@@ -11,8 +11,8 @@ class Chatter(object):
         # TODO igual no hace falta hacer el can process y el processm ¿quizas con 1 solo ya basta?
         state = self.mongo.search_user_by_id(statement.id)["status"]
         for i, adapter in enumerate(self.logic_adapters):
-            if adapter.can_process(statement, state):
-                confidence = adapter.process(statement, state)
+            if adapter.can_process(statement, state, self.mongo):
+                confidence = adapter.process(statement, state, self.mongo)
 
                 if confidence > max_confidence:
                     win_adapter = i

@@ -26,6 +26,7 @@ if __name__ == '__main__':
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
         mongo.new_user(User(message.chat.id, "", 0, ""))
+        mongo.update_user_status(message.chat.id, 0)
         chat_id = message.chat.id
         bot.send_message(chat_id, "This is Chefbot")
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)

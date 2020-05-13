@@ -11,13 +11,13 @@ class ingredientChosser(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, state, mongo):
         if state == 0:
             return True
         return False
 
     @staticmethod
-    def process(statement):
+    def can_process(statement, state, mongo):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("ingredient"))
 
     @staticmethod
@@ -36,13 +36,13 @@ class listIngredient(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, state, mongo):
         if state == 2:
             return True
         return False
 
     @staticmethod
-    def process(statement):
+    def can_process(statement, state, mongo):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("list ingredient"))
 
     @staticmethod
@@ -61,13 +61,13 @@ class addIngredient(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, state, mongo):
         if state == 2:
             return True
         return False
 
     @staticmethod
-    def process(statement):
+    def can_process(statement, state, mongo):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("add ingredient"))
 
     @staticmethod
@@ -88,7 +88,7 @@ class addIngredientNameManually(object):
         return False
 
     @staticmethod
-    def process(statement):
+    def can_process(statement, state, mongo):
         return 1
 
     @staticmethod
@@ -112,7 +112,7 @@ class addIngredientNameManually(object):
         return True
 
     @staticmethod
-    def process(statement):
+    def can_process(statement, state, mongo):
         return 1
 
     @staticmethod
