@@ -9,38 +9,16 @@ class MongoDB:
         # self.collection = self.db["CB_Recipies"]
 
     # User querys______________________________
-    def new_user(self, user):
-        try:
-            self.collection.insert(
-                {
-                    "_id": user.token,
-                    "username": user.username,
-                    "status": user.status,
-                    "current_keyboard": user.current_keyboard
-                }
-            )
-        except MongoDB:
-            print("Ya existe este usuario en la BBDD")
-
     def update_user_status(self, token, status):
         self.collection.find_one_and_update(
-            {
-                "_id": token
-            },
-            {
-                "$set":
-                    {
-                        "status": status
-                    }
-            }
+            {"_id": token},
+            {"$set": {"status": status}}
         )
 
     # Con esta función se puedo conocer el usuario con detalle (estado, teclado, etc)
     def search_user(self, user):
         return self.collection.find_one(
-            {
-                "_id": user.token
-            }
+            {"_id": user.token}
         )
 
     def search_user_by_id(self, token):
@@ -49,6 +27,17 @@ class MongoDB:
                 "_id": token
             }
         )
+
+    def new_user(self, user):
+        if self.search_user(user) is None:
+            self.collection.insert_one(
+                {
+                    "_id": user.token,
+                    "username": user.username,
+                    "status": user.status,
+                    "current_keyboard": user.current_keyboard
+                }
+            )
 
     # Pantry Querys_____________________________
     # TODO: comprobar antes si el ingrediente que se quiere añadir existe
@@ -71,8 +60,9 @@ class MongoDB:
             }
         )
 
+    #fixme: no encuetra nah de nah
     def search_ingredient(self, user, ingredient):
-        return self.collection.find(
+        return self.collection.find_one(
             {
                 "_id": user.token,
                 "ingredient": ingredient.ingredient
