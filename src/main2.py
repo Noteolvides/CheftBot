@@ -13,6 +13,8 @@ def main():
     mongo.update_user_status("token_aleatorio", 1.0)
     find = mongo.search_user(user)
     print(find["status"])
+    v = mongo.search_ingredient(user, ingredient)
+    print(v)
 
     mongo.client.close()
 

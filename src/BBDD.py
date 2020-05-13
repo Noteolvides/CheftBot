@@ -44,6 +44,7 @@ class MongoDB:
         )
 
     # Pantry Querys_____________________________
+    # TODO: comprobar antes si el ingrediente que se quiere añadir existe
     def new_ingredient(self, user, ingredient):
         # TODO: Falta imagen
         self.collection.find_one_and_update(
@@ -67,7 +68,7 @@ class MongoDB:
         return self.collection.find(
             {
                 "_id": user.token,
-                "ingredient": ingredient
+                "ingredient": ingredient.ingredient
             }
         )
 
@@ -88,4 +89,8 @@ class MongoDB:
             }
         )
 
+    # TODO: search all ingredients
+
     # ShoppingList Querys_______________________
+
+    # TODO: insert recipies from api and create collection
