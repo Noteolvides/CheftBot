@@ -41,14 +41,14 @@ class SeeRecipes(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, status):
         lower_string = statement.text
         if Aux.state == ESTADO_MENU:  # and "recipe" in lower_string.lower():
             return True
         return False
 
     @staticmethod
-    def process(statement, state):
+    def process(statement, status):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("recipe"))
 
     @staticmethod
@@ -78,7 +78,7 @@ class ChooseRecipe(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, status):
         # TODO RECETAS de la BBDD
         if Aux.state == ESTADO_CHOOSING:
             # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
@@ -92,7 +92,7 @@ class ChooseRecipe(object):
         return False
 
     @staticmethod
-    def process(statement, state):
+    def process(statement, status):
         max = -1
         # if JaccardSimilarity().compare(Statement(statement.text), Statement(MORE_RECIPE)) > min:
         #    return 1
@@ -140,7 +140,7 @@ class CookingRecipe(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, status):
         lower_string = statement.text
         # TODO cambiar estado a Viendo recetas
         if "start cooking" in lower_string.lower():
@@ -150,7 +150,7 @@ class CookingRecipe(object):
         return False
 
     @staticmethod
-    def process(statement, state):
+    def process(statement, status):
         lower_string = statement.text
         if "next step" in lower_string.lower():
             return JaccardSimilarity().compare(Statement(statement.text), Statement("next step"))
@@ -182,13 +182,13 @@ class NavigationReciepe(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, status):
         if Aux.state == ESTADO_COOKING:
             return True
         return False
 
     @staticmethod
-    def process(statement, state):
+    def process(statement, status):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("previous step"))
 
     @staticmethod
@@ -206,7 +206,7 @@ class MoreInfoRecipe(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, status):
         if "see steps" in statement.text.lower():
             return True
         if "see cookware" in statement.text.lower():
@@ -217,7 +217,7 @@ class MoreInfoRecipe(object):
         return False
 
     @staticmethod
-    def process(statement, state):
+    def process(statement, status):
         if "see steps" in statement.text.lower():
             return JaccardSimilarity().compare(Statement(statement.text), Statement("see steps"))
 
@@ -255,13 +255,13 @@ class MealRating(object):
         pass
 
     @staticmethod
-    def can_process(statement, state):
+    def can_process(statement, status):
         lower_string = statement.text
         # TODO Controlar que estemos en modo de rating
         return lower_string.isnumeric()
 
     @staticmethod
-    def process(statement, state):
+    def process(statement, status):
         lower_string = statement.text
         if lower_string.isnumeric():
             return 1
