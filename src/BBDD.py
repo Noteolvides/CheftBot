@@ -74,12 +74,17 @@ class MongoDB:
         )
 
     # ShoppingList Querys_______________________
+    def new_ingredient(self, user, ingredient):
+        return 0
+
+    def show_shopping_list(self, user, ingredient):
+        return 0
+
+    def update_ingredient_shopping_list(self, user, ingredient):
+        return 0
 
     # Recipies API______________________________
 
     def insert_new_recipie(self, recipie):
-        self.collection.insert(
-            {
-
-            }
-        )
+        #TODO: hace falta controlar que no repiten las recipies
+        self.collection.insert({recipie})
