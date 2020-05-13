@@ -23,18 +23,11 @@ class MongoDB:
         except MongoDB:
             print("Ya existe este usuario en la BBDD")
 
-    def update_user(self, token):
+    def update_user_status(self, token, status):
         self.collection.find_one_and_update()
 
     # Con esta función se puedo conocer el usuario con detalle (estado, teclado, etc)
     def search_user(self, user):
-        return self.collection.find_one(
-            {
-                "_id": user.token
-            }
-        )
-
-    def status_user(self, user):
         return self.collection.find_one(
             {
                 "_id": user.token
@@ -48,12 +41,15 @@ class MongoDB:
             {
                 "_id": user.token
             },
-            {"$set":
+            {
+                "$push":
                 {
-                    "ingredients": {
-                        "ingredient_name": [ingredient.ingredient],
-                        "quantity": ingredient.quantity
-                     }
+                    "ingredients": [
+                        {
+                            "ingredient_name": ingredient.ingredient,
+                            "quantity": ingredient.quantity
+                        }
+                    ]
                 }
             }
         )
