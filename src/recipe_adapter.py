@@ -41,14 +41,14 @@ class SeeRecipes(object):
         pass
 
     @staticmethod
-    def can_process(statement, status):
+    def can_process(statement, status, mongo):
         lower_string = statement.text
-        if Aux.state == ESTADO_MENU:  # and "recipe" in lower_string.lower():
+        if "recipe" in lower_string.lower(): # Aux.state == ESTADO_MENU:
             return True
         return False
 
     @staticmethod
-    def process(statement, status):
+    def process(statement, status, mongo):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("recipe"))
 
     @staticmethod
@@ -78,26 +78,19 @@ class ChooseRecipe(object):
         pass
 
     @staticmethod
-    def can_process(statement, status):
-        # TODO RECETAS de la BBDD
-        if Aux.state == ESTADO_CHOOSING:
-            # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
-            # if "none" in statement.text.lower:
-            #    return 1
-
-            for recipe in Aux.recipes:
-                if statement.text.lower() in recipe["title"].lower():
-                    return True
+    def can_process(statement, status, mongo):
+        if status == ESTADO_CHOOSING:
+            return True
 
         return False
 
     @staticmethod
-    def process(statement, status):
+    def process(statement, status, mongo):
         max = -1
         # if JaccardSimilarity().compare(Statement(statement.text), Statement(MORE_RECIPE)) > min:
         #    return 1
 
-        # TODO recipes vendra de la BBDD
+        # TODO recipes vendra del mongo
         # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
         for recipe in Aux.recipes:
             actual = JaccardSimilarity().compare(Statement(statement.text), Statement(recipe["title"]))
@@ -110,29 +103,29 @@ class ChooseRecipe(object):
 
     @staticmethod
     def response(statement, bot, mongo):
-        if "none" not in statement.text.lower():
-            bot.send_message(statement.id, EXCELENT_CHOICE)
-            bot.send_message(statement.id, READY_RECIPE)
-            bot.send_message(statement.id, COOKWARE_RECIPE)
+        bot.send_message(statement.id, EXCELENT_CHOICE)
+        bot.send_message(statement.id, READY_RECIPE)
+        bot.send_message(statement.id, COOKWARE_RECIPE)
 
-            Aux.steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
-            # TODO guardar STEPS enla BBDD y el progresp, el step actual (el 0)
 
-            # list1 = recipes[:len(recipes)//2]
-            # list2 = recipes[:len(recipes)//2]
-            # TODO comprobar que la estructura del json de los steps es la correcta --> el steps[0] puede ser de varios!!
-            for step in Aux.steps[0]["steps"]:
-                for equipment in step["equipment"]:
-                    bot.send_message(statement.id, equipment["name"])
+        Aux.steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
+        # TODO guardar STEPS enla BBDD y el progresp, el step actual (el 0)
 
-            bot.send_message(statement.id, "Lets take a look to the ingredients")
-            bot.send_message(statement.id, INGREDIENTS_RECIPE)
-            for step in Aux.steps[0]["steps"]:
-                for ingredient in step["ingredients"]:
-                    bot.send_message(statement.id, ingredient["name"])
+        # list1 = recipes[:len(recipes)//2]
+        # list2 = recipes[:len(recipes)//2]
+        # TODO comprobar que la estructura del json de los steps es la correcta --> el steps[0] puede ser de varios!!
+        for step in Aux.steps[0]["steps"]:
+            for equipment in step["equipment"]:
+                bot.send_message(statement.id, equipment["name"])
 
-            # Todo ¿Se puede poner negrita en los mensajes, para dar enfasis a la palabra exacta que tiene que escribir la persona?
-            bot.send_message(statement.id, START_COOKING)
+        bot.send_message(statement.id, "Lets take a look to the ingredients")
+        bot.send_message(statement.id, INGREDIENTS_RECIPE)
+        for step in Aux.steps[0]["steps"]:
+            for ingredient in step["ingredients"]:
+                bot.send_message(statement.id, ingredient["name"])
+
+        # Todo ¿Se puede poner negrita en los mensajes, para dar enfasis a la palabra exacta que tiene que escribir la persona?
+        bot.send_message(statement.id, START_COOKING)
 
 
 class CookingRecipe(object):
@@ -140,7 +133,7 @@ class CookingRecipe(object):
         pass
 
     @staticmethod
-    def can_process(statement, status):
+    def can_process(statement, status, mongo):
         lower_string = statement.text
         # TODO cambiar estado a Viendo recetas
         if "start cooking" in lower_string.lower():
@@ -150,7 +143,7 @@ class CookingRecipe(object):
         return False
 
     @staticmethod
-    def process(statement, status):
+    def process(statement, status, mongo):
         lower_string = statement.text
         if "next step" in lower_string.lower():
             return JaccardSimilarity().compare(Statement(statement.text), Statement("next step"))
@@ -182,13 +175,13 @@ class NavigationReciepe(object):
         pass
 
     @staticmethod
-    def can_process(statement, status):
+    def can_process(statement, status, mongo):
         if Aux.state == ESTADO_COOKING:
             return True
         return False
 
     @staticmethod
-    def process(statement, status):
+    def process(statement, status, mongo):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("previous step"))
 
     @staticmethod
@@ -206,7 +199,7 @@ class MoreInfoRecipe(object):
         pass
 
     @staticmethod
-    def can_process(statement, status):
+    def can_process(statement, status, mongo):
         if "see steps" in statement.text.lower():
             return True
         if "see cookware" in statement.text.lower():
@@ -217,7 +210,7 @@ class MoreInfoRecipe(object):
         return False
 
     @staticmethod
-    def process(statement, status):
+    def process(statement, status, mongo):
         if "see steps" in statement.text.lower():
             return JaccardSimilarity().compare(Statement(statement.text), Statement("see steps"))
 
@@ -255,13 +248,13 @@ class MealRating(object):
         pass
 
     @staticmethod
-    def can_process(statement, status):
+    def can_process(statement, status, mongo):
         lower_string = statement.text
         # TODO Controlar que estemos en modo de rating
         return lower_string.isnumeric()
 
     @staticmethod
-    def process(statement, status):
+    def process(statement, status, mongo):
         lower_string = statement.text
         if lower_string.isnumeric():
             return 1
