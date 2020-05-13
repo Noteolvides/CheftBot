@@ -13,8 +13,11 @@ from src.recipe_adapter import CookingRecipe
 from src.chatter import Chatter
 from src.chatter import Statement
 
-MENU = 0
-RECETAS = 1
+ESTADO_MENU = 0
+ESTADO_RECETAS = 1
+ESTADO_CHOOSING = 12
+ESTADO_COOKING = 13
+ESTADO_RATING = 14
 
 API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)

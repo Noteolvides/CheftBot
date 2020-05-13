@@ -6,6 +6,8 @@ from chatterbot.logic import LogicAdapter
 from telebot.types import InlineKeyboardMarkup
 from telegram import InlineKeyboardButton
 
+from src.main import ESTADO_MENU, ESTADO_CHOOSING, ESTADO_COOKING, ESTADO_RATING
+
 POSSIBLE_RECIPIES = "These are the recipies that you can cook with the ingredients that you have"
 NONE_RECIPE = "None of the above"
 MORE_RECIPE = "See more recipes"
@@ -19,9 +21,16 @@ ALL_COOKWARE = "Here are all te utensils/cookware you will need for your current
 ALL_INGREDIENTS = "Here are all the ingredients you will need for your current recipe"
 RATE_MEAL = "How would you rate this meal?"
 
-
 api = sp.API("aa9cc6861144497a9ce2ab7ffa864984")
 min = 0.7
+
+
+class Aux(object):
+    state = ESTADO_MENU
+    recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
+                                              ranking=1).json()
+    steps = None
+    paso_actual = 0
 
 
 class SeeRecipes(object):
@@ -31,7 +40,7 @@ class SeeRecipes(object):
     @staticmethod
     def can_process(statement):
         lower_string = statement.text
-        if "recipe" in lower_string.lower():
+        if Aux.state == ESTADO_MENU:  # and "recipe" in lower_string.lower():
             return True
         return False
 
@@ -45,17 +54,20 @@ class SeeRecipes(object):
         bot.send_message(statement.id, POSSIBLE_RECIPIES)
 
         # TODO pedir INGREDIENTES de la BBDD para pasarle a la api
-        recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
+        Aux.recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
                                                     ranking=1).json()
         # list1 = recipes[:len(recipes)//2]
         # list2 = recipes[:len(recipes)//2]
 
-        for recipe in recipes:
+        for recipe in Aux.recipes:
             bot.send_message(statement.id, recipe.title)
 
         # bot.send_message(statement.id, NONE_RECIPE)
         # bot.send_message(statement.id, MORE_RECIPE)
         bot.send_message(statement.id, "Wich one do you like?")
+
+        # TODO cambio de estado en bbdd
+        Aux.state = ESTADO_CHOOSING
 
 
 class ChooseRecipe(object):
@@ -65,14 +77,14 @@ class ChooseRecipe(object):
     @staticmethod
     def can_process(statement):
         # TODO RECETAS de la BBDD
-        recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
-                                                    ranking=1).json()
-        # if "none" in statement.text.lower:
-        #    return 1
+        if Aux.state == ESTADO_CHOOSING:
+            # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
+            # if "none" in statement.text.lower:
+            #    return 1
 
-        for recipe in recipes:
-            if statement.text.lower in recipe.title.lower:
-                return True
+            for recipe in Aux.recipes:
+                if statement.text.lower in recipe.title.lower:
+                    return True
 
         return False
 
@@ -83,9 +95,8 @@ class ChooseRecipe(object):
         #    return 1
 
         # TODO recipes vendra de la BBDD
-        recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
-                                                    ranking=1).json()
-        for recipe in recipes:
+        # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
+        for recipe in Aux.recipes:
             actual = JaccardSimilarity().compare(Statement(statement.text), Statement(recipe.title))
             if actual > max:
                 max = actual
@@ -101,19 +112,19 @@ class ChooseRecipe(object):
             bot.send_message(statement.id, READY_RECIPE)
             bot.send_message(statement.id, COOKWARE_RECIPE)
 
-            steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
+            Aux.steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
             # TODO guardar STEPS enla BBDD y el progresp, el step actual (el 0)
 
             # list1 = recipes[:len(recipes)//2]
             # list2 = recipes[:len(recipes)//2]
             # TODO comprobar que la estructura del json de los steps es la correcta --> el steps[0] puede ser de varios!!
-            for step in steps[0].steps:
+            for step in Aux.steps[0].steps:
                 for equipment in step.equipment:
                     bot.send_message(statement.id, equipment.name)
 
             bot.send_message(statement.id, "Lets take a look to the ingredients")
             bot.send_message(statement.id, INGREDIENTS_RECIPE)
-            for step in steps[0].steps:
+            for step in Aux.steps[0].steps:
                 for ingredient in step.ingredients:
                     bot.send_message(statement.id, ingredient.name)
 
@@ -122,9 +133,6 @@ class ChooseRecipe(object):
 
 
 class CookingRecipe(object):
-    steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
-    paso_actual = 0
-
     def __init__(self, **kwargs):
         pass
 
@@ -150,24 +158,47 @@ class CookingRecipe(object):
     @staticmethod
     def response(statement, bot):
 
-        if CookingRecipe.paso_actual == len(CookingRecipe.steps[0].steps) - 1:
+        if Aux.paso_actual == len(Aux.steps[0].steps) - 1:
             bot.send_message(statement.id, "You are almost done!")
 
-        if CookingRecipe.paso_actual != len(CookingRecipe.steps[0].steps):
+        if Aux.paso_actual != len(Aux.steps[0].steps):
             # gran variedad de nombres la verdad :(
-            bot.send_message(statement.id, CookingRecipe.steps[0].steps[CookingRecipe.paso_actual].step)
+            bot.send_message(statement.id, Aux.steps[0].steps[Aux.paso_actual].step)
         else:
             bot.send_message(statement.id, "Congratulations you have finished the recipe (icono de celebracion)")
             bot.send_message(statement.id, "Bon apettite (icono de chef)")
             bot.send_message(statement.id, RATE_MEAL)
+            Aux.state = ESTADO_RATING
 
         # Todo usar BBDD para los pasos
-        CookingRecipe.paso_actual = CookingRecipe.paso_actual + 1
+        Aux.paso_actual = Aux.paso_actual + 1
+
+
+class NavigationReciepe(object):
+    def __init__(self, **kwargs):
+        pass
+
+    @staticmethod
+    def can_process(statement):
+        if Aux.state == ESTADO_COOKING:
+            return True
+        return False
+
+    @staticmethod
+    def process(statement):
+        return JaccardSimilarity().compare(Statement(statement.text), Statement("previous step"))
+
+    @staticmethod
+    def response(statement, bot):
+        Aux.paso_actual = Aux.paso_actual - 1
+
+        if Aux.paso_actual > 0:
+            bot.send_message(statement.id, "This was the previous step")
+            bot.send_message(statement.id, Aux.steps[0].steps[Aux.paso_actual].step)
+        # Todo usar BBDD para los pasos
 
 
 class MoreInfoRecipe(object):
-    steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
-
     def __init__(self, **kwargs):
         pass
 
@@ -197,23 +228,23 @@ class MoreInfoRecipe(object):
     def response(statement, bot):
         if "see steps" in statement.text.lower:
             bot.send_message(statement.id, ALL_STEPS)
-            for step in MoreInfoRecipe.steps[0].steps:
+            for step in Aux.steps[0].steps:
                 bot.send_message(statement.id, step.step)
 
         if "see cookware" in statement.text.lower:
             bot.send_message(statement.id, ALL_COOKWARE)
-            for step in MoreInfoRecipe.steps[0].steps:
+            for step in Aux.steps[0].steps:
                 for equipment in step.equipment:
                     bot.send_message(statement.id, equipment.name)
 
         if "see ingredients" in statement.text.lower:
             bot.send_message(statement.id, ALL_INGREDIENTS)
-            for step in MoreInfoRecipe.steps[0].steps:
+            for step in Aux.steps[0].steps:
                 for ingredient in step.ingredients:
                     bot.send_message(statement.id, ingredient.name)
 
         bot.send_message(statement.id, "Your currently step is:")
-        bot.send_message(statement.id, MoreInfoRecipe.steps[0].steps[0].step)
+        bot.send_message(statement.id, Aux.steps[0].steps[0].step)
 
 
 class MealRating(object):
@@ -235,10 +266,6 @@ class MealRating(object):
 
     @staticmethod
     def response(statement, bot):
-
         bot.send_message(statement.id, "Thanks for your review, I'll keep it in my HDD for your next meals! :)")
         # todo, se puede llamar a la del main ¿?
-        bot.send_message(statement.id, "This is Chefbot")
-        markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
-        markup.add('Shopping list', 'Ingredients', 'Recipes')
-        bot.reply_to(message, 'What would you like to do', reply_markup=markup)
+        Aux.state = ESTADO_MENU
