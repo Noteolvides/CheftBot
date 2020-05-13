@@ -6,7 +6,11 @@ from chatterbot.logic import LogicAdapter
 from telebot.types import InlineKeyboardMarkup
 from telegram import InlineKeyboardButton
 
-from src.main import ESTADO_MENU, ESTADO_CHOOSING, ESTADO_COOKING, ESTADO_RATING
+ESTADO_MENU = 0
+ESTADO_RECETAS = 1
+ESTADO_CHOOSING = 12
+ESTADO_COOKING = 13
+ESTADO_RATING = 14
 
 POSSIBLE_RECIPIES = "These are the recipies that you can cook with the ingredients that you have"
 NONE_RECIPE = "None of the above"
@@ -27,8 +31,7 @@ min = 0.7
 
 class Aux(object):
     state = ESTADO_MENU
-    recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
-                                              ranking=1).json()
+    recipes = None
     steps = None
     paso_actual = 0
 
@@ -45,7 +48,7 @@ class SeeRecipes(object):
         return False
 
     @staticmethod
-    def process(self, statement):
+    def process(statement):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("recipe"))
 
     @staticmethod
@@ -60,7 +63,7 @@ class SeeRecipes(object):
         # list2 = recipes[:len(recipes)//2]
 
         for recipe in Aux.recipes:
-            bot.send_message(statement.id, recipe.title)
+            bot.send_message(statement.id, recipe["title"])
 
         # bot.send_message(statement.id, NONE_RECIPE)
         # bot.send_message(statement.id, MORE_RECIPE)
@@ -83,7 +86,7 @@ class ChooseRecipe(object):
             #    return 1
 
             for recipe in Aux.recipes:
-                if statement.text.lower in recipe.title.lower:
+                if statement.text.lower() in recipe["title"].lower():
                     return True
 
         return False
@@ -97,7 +100,7 @@ class ChooseRecipe(object):
         # TODO recipes vendra de la BBDD
         # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
         for recipe in Aux.recipes:
-            actual = JaccardSimilarity().compare(Statement(statement.text), Statement(recipe.title))
+            actual = JaccardSimilarity().compare(Statement(statement.text), Statement(recipe["title"]))
             if actual > max:
                 max = actual
                 selected_recipe = recipe
@@ -107,7 +110,7 @@ class ChooseRecipe(object):
 
     @staticmethod
     def response(statement, bot):
-        if "none" not in statement.text.lower:
+        if "none" not in statement.text.lower():
             bot.send_message(statement.id, EXCELENT_CHOICE)
             bot.send_message(statement.id, READY_RECIPE)
             bot.send_message(statement.id, COOKWARE_RECIPE)
@@ -118,15 +121,15 @@ class ChooseRecipe(object):
             # list1 = recipes[:len(recipes)//2]
             # list2 = recipes[:len(recipes)//2]
             # TODO comprobar que la estructura del json de los steps es la correcta --> el steps[0] puede ser de varios!!
-            for step in Aux.steps[0].steps:
-                for equipment in step.equipment:
-                    bot.send_message(statement.id, equipment.name)
+            for step in Aux.steps[0]["steps"]:
+                for equipment in step["equipment"]:
+                    bot.send_message(statement.id, equipment["name"])
 
             bot.send_message(statement.id, "Lets take a look to the ingredients")
             bot.send_message(statement.id, INGREDIENTS_RECIPE)
-            for step in Aux.steps[0].steps:
-                for ingredient in step.ingredients:
-                    bot.send_message(statement.id, ingredient.name)
+            for step in Aux.steps[0]["steps"]:
+                for ingredient in step["ingredients"]:
+                    bot.send_message(statement.id, ingredient["name"])
 
             # Todo ¿Se puede poner negrita en los mensajes, para dar enfasis a la palabra exacta que tiene que escribir la persona?
             bot.send_message(statement.id, START_COOKING)
@@ -158,12 +161,12 @@ class CookingRecipe(object):
     @staticmethod
     def response(statement, bot):
 
-        if Aux.paso_actual == len(Aux.steps[0].steps) - 1:
+        if Aux.paso_actual == len(Aux.steps[0]["steps"]) - 1:
             bot.send_message(statement.id, "You are almost done!")
 
-        if Aux.paso_actual != len(Aux.steps[0].steps):
+        if Aux.paso_actual != len(Aux.steps[0]["steps"]):
             # gran variedad de nombres la verdad :(
-            bot.send_message(statement.id, Aux.steps[0].steps[Aux.paso_actual].step)
+            bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"])
         else:
             bot.send_message(statement.id, "Congratulations you have finished the recipe (icono de celebracion)")
             bot.send_message(statement.id, "Bon apettite (icono de chef)")
@@ -194,7 +197,7 @@ class NavigationReciepe(object):
 
         if Aux.paso_actual > 0:
             bot.send_message(statement.id, "This was the previous step")
-            bot.send_message(statement.id, Aux.steps[0].steps[Aux.paso_actual].step)
+            bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"])
         # Todo usar BBDD para los pasos
 
 
@@ -204,47 +207,47 @@ class MoreInfoRecipe(object):
 
     @staticmethod
     def can_process(statement):
-        if "see steps" in statement.text.lower:
+        if "see steps" in statement.text.lower():
             return True
-        if "see cookware" in statement.text.lower:
+        if "see cookware" in statement.text.lower():
             return True
-        if "see ingredients" in statement.text.lower:
+        if "see ingredients" in statement.text.lower():
             return True
 
         return False
 
     @staticmethod
     def process(statement):
-        if "see steps" in statement.text.lower:
+        if "see steps" in statement.text.lower():
             return JaccardSimilarity().compare(Statement(statement.text), Statement("see steps"))
 
-        if "see cookware" in statement.text.lower:
+        if "see cookware" in statement.text.lower():
             return JaccardSimilarity().compare(Statement(statement.text), Statement("see cookware"))
 
-        if "see ingredients" in statement.text.lower:
+        if "see ingredients" in statement.text.lower():
             return JaccardSimilarity().compare(Statement(statement.text), Statement("see ingredients"))
 
     @staticmethod
     def response(statement, bot):
-        if "see steps" in statement.text.lower:
+        if "see steps" in statement.text.lower():
             bot.send_message(statement.id, ALL_STEPS)
-            for step in Aux.steps[0].steps:
-                bot.send_message(statement.id, step.step)
+            for step in Aux.steps[0]["steps"]:
+                bot.send_message(statement.id, step["step"])
 
-        if "see cookware" in statement.text.lower:
+        if "see cookware" in statement.text.lower():
             bot.send_message(statement.id, ALL_COOKWARE)
-            for step in Aux.steps[0].steps:
-                for equipment in step.equipment:
-                    bot.send_message(statement.id, equipment.name)
+            for step in Aux.steps[0]["steps"]:
+                for equipment in step["equipment"]:
+                    bot.send_message(statement.id, equipment["name"])
 
-        if "see ingredients" in statement.text.lower:
+        if "see ingredients" in statement.text.lower():
             bot.send_message(statement.id, ALL_INGREDIENTS)
-            for step in Aux.steps[0].steps:
-                for ingredient in step.ingredients:
-                    bot.send_message(statement.id, ingredient.name)
+            for step in Aux.steps[0]["steps"]:
+                for ingredient in step["ingredients"]:
+                    bot.send_message(statement.id, ingredient["name"])
 
         bot.send_message(statement.id, "Your currently step is:")
-        bot.send_message(statement.id, Aux.steps[0].steps[0].step)
+        bot.send_message(statement.id, Aux.steps[0]["steps"][0]["step"])
 
 
 class MealRating(object):
