@@ -10,7 +10,7 @@ def main():
 
     # mongo.new_user(user)
     mongo.new_ingredient(user, ingredient)
-
+    mongo.update_user_status("token_aleatorio", 1.0)
     find = mongo.search_user(user)
     print(find["status"])
 

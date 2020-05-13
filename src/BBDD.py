@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-import json
 
 
 class MongoDB:
@@ -24,7 +23,17 @@ class MongoDB:
             print("Ya existe este usuario en la BBDD")
 
     def update_user_status(self, token, status):
-        self.collection.find_one_and_update()
+        self.collection.find_one_and_update(
+            {
+                "_id": token
+            },
+            {
+                "$set":
+                    {
+                        "status": status
+                    }
+            }
+        )
 
     # Con esta función se puedo conocer el usuario con detalle (estado, teclado, etc)
     def search_user(self, user):
