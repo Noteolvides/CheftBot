@@ -2,54 +2,59 @@ from pymongo import MongoClient
 import json
 
 
-class MongoDB(object):
+class MongoDB:
     def __init__(self):
         self.client = MongoClient(port=27017)
-        self.db = self.client["db_scraping"]
-        self.collection = self.db["sources"]
+        self.db = self.client["ChefBot"]
+        self.collection = self.db["CB_User"]
+        # self.collection = self.db["CB_Recipies"]
 
     # User querys______________________________
-    def newUser(self, user):
-        self.collection.insert_one(
+    def new_user(self, user):
+        self.collection.insert(
             {
-                "_id": user.token,  # Codigo id único en mongo db
+                "token": user.token,
                 "username": user.username,
                 "status": user.status,
                 "current_keyboard": user.current_keyboard
             }
         )
 
-    #TODO: Actualizar valores de un usuario
-    def updateUser(self, user):
+    # TODO: Actualizar valores de un usuario
+    def update_user(self, user):
         self.collection.update()
 
-    def searchUser(self, user):
+    # Con esta función se puedo conocer el usuario con detalle (estado, teclado, etc)
+    def search_user(self, user):
         return self.collection.find(
             {
                 "_id": user.token
             }
-        ).pretty()
+        )
 
     # Pantry Querys_____________________________
-    def newIngredient(self, user, pantry, ingredient):
-        #TODO: Falta imagen
-        self.collection.insert_one(
+    def new_ingredient(self, user, ingredient):
+        # TODO: Falta imagen
+        self.collection.update(
+            {
+                "_id": user.token
+            },
             {
                 "_id": user.token,  # Codigo id único en mongo db
-                "ingredient": user.username,
+                "ingredient": [ingredient],
                 "quantity": user.status,
             }
         )
 
-    def searchIngredient(self, user, ingredient):
+    def search_ingredient(self, user, ingredient):
         return self.collection.find(
             {
                 "_id": user.token,
                 "ingredient": ingredient
             }
-        ).pretty()
+        )
 
-    def updateIngredient(self, user, ingredient):
+    def update_ingredient(self, user, ingredient):
         self.collection.update(
             {
                 "_id": user.token,
