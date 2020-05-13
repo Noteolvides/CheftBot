@@ -43,6 +43,13 @@ class MongoDB:
             }
         )
 
+    def search_user_by_id(self, token):
+        return self.collection.find_one(
+            {
+                "_id": token
+            }
+        )
+
     # Pantry Querys_____________________________
     # TODO: comprobar antes si el ingrediente que se quiere añadir existe
     def new_ingredient(self, user, ingredient):
@@ -53,14 +60,14 @@ class MongoDB:
             },
             {
                 "$push":
-                {
-                    "ingredients": [
-                        {
-                            "ingredient_name": ingredient.ingredient,
-                            "quantity": ingredient.quantity
-                        }
-                    ]
-                }
+                    {
+                        "ingredients": [
+                            {
+                                "ingredient_name": ingredient.ingredient,
+                                "quantity": ingredient.quantity
+                            }
+                        ]
+                    }
             }
         )
 
@@ -84,7 +91,7 @@ class MongoDB:
                     "ingredients": {
                         "ingredient_name": [ingredient.ingredient],
                         "quantity": ingredient.quantity
-                     }
+                    }
                 }
             }
         )

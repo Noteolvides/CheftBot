@@ -2,6 +2,9 @@ import telebot
 import emoji
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from src.BBDD import MongoDB
+from src.Model.User import User
 from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
@@ -11,9 +14,9 @@ from src.chatter import Statement
 API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
-
+mongo = MongoDB()
 chatter = Chatter(
-    [addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, NavigationReciepe, MealRating])
+    [addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, NavigationReciepe, MealRating], mongo)
 
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
@@ -22,6 +25,7 @@ commands = {  # command description used in the "help" command
 if __name__ == '__main__':
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
+        mongo.new_user(User(message.chat.id, "", 0, ""))
         chat_id = message.chat.id
         bot.send_message(chat_id, "This is Chefbot")
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)

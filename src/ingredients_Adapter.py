@@ -11,10 +11,8 @@ class ingredientChosser(object):
         pass
 
     @staticmethod
-    def can_process(statement):
-        # TODO(DATABASE) CALL DATABASE TO SEE IF I AM IN THE CORRECT STATE FOR NOW, SEARCH WORD INGREDIENT
-        lower_string = statement.text
-        if "ingredient" in lower_string.lower():
+    def can_process(statement, state):
+        if state == 0:
             return True
         return False
 
@@ -23,13 +21,14 @@ class ingredientChosser(object):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("ingredient"))
 
     @staticmethod
-    def response(statement, bot):
+    def response(statement, bot, mongo):
         # change state of user
         markup = InlineKeyboardMarkup()
         markup.row_width = 2
         markup.add(InlineKeyboardButton("Add ingredient", callback_data="add_ingredient"),
                    InlineKeyboardButton("List ingredient", callback_data="list_ingredient"))
         bot.send_message(statement.id, "What do you want to do", reply_markup=markup)
+        mongo.update_user_status(statement.id, 2)
 
 
 class listIngredient(object):
@@ -37,10 +36,8 @@ class listIngredient(object):
         pass
 
     @staticmethod
-    def can_process(statement):
-        # TODO(DATABASE) CALL DATABASE TO SEE IF I AM IN THE CORRECT STATE FOR NOW, SEARCH WORD INGREDIENT
-        lower_string = statement.text
-        if "ingredient" in lower_string.lower():
+    def can_process(statement, state):
+        if state == 2:
             return True
         return False
 
@@ -49,9 +46,9 @@ class listIngredient(object):
         return JaccardSimilarity().compare(Statement(statement.text), Statement("list ingredient"))
 
     @staticmethod
-    def response(statement, bot):
-        # get all the information of the database
-        ingredients = list()
+    def response(statement, bot, mongo):
+        mongo.update_user_status(statement.id, 21)
+        ingredients = mongo.search_user_by_id(statement.id)["ingredients"]
         for ingredient in ingredients:
             bot.send_message(statement.id, print(ingredient))
         else:
@@ -64,10 +61,8 @@ class addIngredient(object):
         pass
 
     @staticmethod
-    def can_process(statement):
-        # TODO(DATABASE) CALL DATABASE TO SEE IF I AM IN THE CORRECT STATE FOR NOW, SEARCH WORD INGREDIENT
-        lower_string = statement.text
-        if "ingredient" in lower_string.lower():
+    def can_process(statement, state):
+        if state == 2:
             return True
         return False
 
