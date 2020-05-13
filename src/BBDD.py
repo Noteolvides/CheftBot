@@ -9,9 +9,21 @@ class MongoDB:
         # self.collection = self.db["CB_Recipies"]
 
     # User querys______________________________
+    def update_user_status(self, token, status):
+        self.collection.find_one_and_update(
+            {"_id": token},
+            {"$set": {"status": status}}
+        )
+
+    # Con esta función se puedo conocer el usuario con detalle (estado, teclado, etc)
+    def search_user(self, user):
+        return self.collection.find_one(
+            {"_id": user.token}
+        )
+
     def new_user(self, user):
-        try:
-            self.collection.insert(
+        if self.search_user(user) is None:
+            self.collection.insert_one(
                 {
                     "_id": user.token,
                     "username": user.username,
@@ -19,29 +31,6 @@ class MongoDB:
                     "current_keyboard": user.current_keyboard
                 }
             )
-        except MongoDB:
-            print("Ya existe este usuario en la BBDD")
-
-    def update_user_status(self, token, status):
-        self.collection.find_one_and_update(
-            {
-                "_id": token
-            },
-            {
-                "$set":
-                    {
-                        "status": status
-                    }
-            }
-        )
-
-    # Con esta función se puedo conocer el usuario con detalle (estado, teclado, etc)
-    def search_user(self, user):
-        return self.collection.find_one(
-            {
-                "_id": user.token
-            }
-        )
 
     # Pantry Querys_____________________________
     # TODO: comprobar antes si el ingrediente que se quiere añadir existe
@@ -53,19 +42,20 @@ class MongoDB:
             },
             {
                 "$push":
-                {
-                    "ingredients": [
-                        {
-                            "ingredient_name": ingredient.ingredient,
-                            "quantity": ingredient.quantity
-                        }
-                    ]
-                }
+                    {
+                        "ingredients": [
+                            {
+                                "ingredient_name": ingredient.ingredient,
+                                "quantity": ingredient.quantity
+                            }
+                        ]
+                    }
             }
         )
 
+    #fixme: no encuetra nah de nah
     def search_ingredient(self, user, ingredient):
-        return self.collection.find(
+        return self.collection.find_one(
             {
                 "_id": user.token,
                 "ingredient": ingredient.ingredient
@@ -84,7 +74,7 @@ class MongoDB:
                     "ingredients": {
                         "ingredient_name": [ingredient.ingredient],
                         "quantity": ingredient.quantity
-                     }
+                    }
                 }
             }
         )

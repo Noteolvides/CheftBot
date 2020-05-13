@@ -8,7 +8,7 @@ def main():
     user = User("token_aleatorio", "Test", 0.0, "Spanish")
     ingredient = Ingredient("Bacon", 11, None)
 
-    # mongo.new_user(user)
+    mongo.new_user(user)
     mongo.new_ingredient(user, ingredient)
     mongo.update_user_status("token_aleatorio", 1.0)
     find = mongo.search_user(user)
