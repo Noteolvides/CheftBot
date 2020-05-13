@@ -11,22 +11,31 @@ class MongoDB:
 
     # User querys______________________________
     def new_user(self, user):
-        self.collection.insert(
-            {
-                "token": user.token,
-                "username": user.username,
-                "status": user.status,
-                "current_keyboard": user.current_keyboard
-            }
-        )
+        try:
+            self.collection.insert(
+                {
+                    "_id": user.token,
+                    "username": user.username,
+                    "status": user.status,
+                    "current_keyboard": user.current_keyboard
+                }
+            )
+        except MongoDB:
+            print("Ya existe este usuario en la BBDD")
 
-    # TODO: Actualizar valores de un usuario
-    def update_user(self, user):
-        self.collection.update()
+    def update_user(self, token):
+        self.collection.find_one_and_update()
 
     # Con esta función se puedo conocer el usuario con detalle (estado, teclado, etc)
     def search_user(self, user):
-        return self.collection.find(
+        return self.collection.find_one(
+            {
+                "_id": user.token
+            }
+        )
+
+    def status_user(self, user):
+        return self.collection.find_one(
             {
                 "_id": user.token
             }
@@ -35,14 +44,17 @@ class MongoDB:
     # Pantry Querys_____________________________
     def new_ingredient(self, user, ingredient):
         # TODO: Falta imagen
-        self.collection.update(
+        self.collection.find_one_and_update(
             {
                 "_id": user.token
             },
-            {
-                "_id": user.token,  # Codigo id único en mongo db
-                "ingredient": [ingredient],
-                "quantity": user.status,
+            {"$set":
+                {
+                    "ingredients": {
+                        "ingredient_name": [ingredient.ingredient],
+                        "quantity": ingredient.quantity
+                     }
+                }
             }
         )
 
@@ -58,7 +70,16 @@ class MongoDB:
         self.collection.update(
             {
                 "_id": user.token,
-                "ingredient": ingredient
+                "ingredient": ingredient.ingredient
+            },
+            {"$set":
+                {
+                    "_id": user.token,  # Codigo id único en mongo db
+                    "ingredients": {
+                        "ingredient_name": [ingredient.ingredient],
+                        "quantity": ingredient.quantity
+                     }
+                }
             }
         )
 
