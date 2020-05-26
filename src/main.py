@@ -7,6 +7,7 @@ from src.BBDD import MongoDB
 from src.Model.User import User
 from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient
+from src.message_queue import DelayQueue
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
 from src.chatter import Chatter
 from src.chatter import Statement
@@ -16,11 +17,14 @@ bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
 chatter = Chatter(
-    [addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, NavigationReciepe, MealRating], mongo)
+    [addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MoreInfoRecipe, NavigationReciepe,
+     MealRating], mongo)
 
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
 }
+message_queue = DelayQueue(bot)
+# message_queue.startQueue()
 
 if __name__ == '__main__':
     @bot.message_handler(commands=['start'])
@@ -48,8 +52,7 @@ if __name__ == '__main__':
     def generic_text(message):
         s = Statement(message.text, message.chat.id)
         can_answer = chatter.checkIfMatch(statement=s)
-        if can_answer != -1:
-            chatter.generateResponse(can_answer, s, bot)
+        chatter.generateResponse(can_answer, s, bot)
 
 
     def gen_markup():

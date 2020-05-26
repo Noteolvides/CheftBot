@@ -1,10 +1,14 @@
+import emoji
 import spoonacular as sp
 
 from chatterbot.conversation import Statement
 from chatterbot.comparisons import JaccardSimilarity
 from chatterbot.logic import LogicAdapter
+from telebot import types
 from telebot.types import InlineKeyboardMarkup
-from telegram import InlineKeyboardButton
+from telegram.ext import MessageQueue as mq
+
+from src.message_queue import DelayQueue
 
 ESTADO_MENU = 0
 ESTADO_RECETAS = 1
@@ -30,238 +34,283 @@ min = 0.7
 
 
 class Aux(object):
-    state = ESTADO_MENU
-    recipes = None
-    steps = None
-    paso_actual = 0
+	state = ESTADO_MENU
+	recipes = None
+	steps = None
+	paso_actual = 0
 
 
+# Para ir a la opcion general de recetas, ver recetas posibles segun los ingredientes del user
+# Siempre disponible porque es una de las opciones importantes
 class SeeRecipes(object):
-    def __init__(self, **kwargs):
-        pass
+	def __init__(self, **kwargs):
+		pass
 
-    @staticmethod
-    def can_process(statement, status, mongo):
-        lower_string = statement.text
-        if "recipe" in lower_string.lower(): # Aux.state == ESTADO_MENU:
-            return True
-        return False
+	@staticmethod
+	def can_process(statement, status, mongo):
+		lower_string = statement.text
+		if "recipe" in lower_string.lower():  # Aux.state == ESTADO_MENU:
+			return True
+		return False
 
-    @staticmethod
-    def process(statement, status, mongo):
-        return JaccardSimilarity().compare(Statement(statement.text), Statement("recipe"))
+	@staticmethod
+	def process(statement, status, mongo):
+		return JaccardSimilarity().compare(Statement(statement.text), Statement("recipe"))
 
-    @staticmethod
-    def response(statement, bot, mongo):
-        bot.send_message(statement.id, "Great")
-        bot.send_message(statement.id, POSSIBLE_RECIPIES)
+	@staticmethod
+	def response(statement, bot, mongo):
+		bot.send_message(statement.id, "Great")
+		bot.send_message(statement.id, POSSIBLE_RECIPIES)
 
-        # TODO pedir INGREDIENTES de la BBDD para pasarle a la api
-        Aux.recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
-                                                        ranking=1).json()
-        # list1 = recipes[:len(recipes)//2]
-        # list2 = recipes[:len(recipes)//2]
+		# TODO get INGREDIENTES de la BBDD para pasarle a la api
+		Aux.recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
+														ranking=1).json()
+		# TODO guardar RECETAS POSIBLE de la api en BBDD
+		# queue = MessageQueue()
+		queue = DelayQueue(bot)
+		for recipe in Aux.recipes:
+			queue.addMessage(statement.id, recipe["title"], False)
+			queue.addMessage(statement.id, recipe["image"], True)
 
-        for recipe in Aux.recipes:
-            bot.send_message(statement.id, recipe["title"])
+		queue.startQueue()
+		# bot.send_message(statement.id, recipe["title"])
+		# bot.send_photo(statement.id, recipe["image"])
 
-        # bot.send_message(statement.id, NONE_RECIPE)
-        # bot.send_message(statement.id, MORE_RECIPE)
-        bot.send_message(statement.id, "Wich one do you like?")
+		# bot.send_message(statement.id, NONE_RECIPE)
+		# bot.send_message(statement.id, MORE_RECIPE)
 
-        # TODO cambio de estado en bbdd
-        Aux.state = ESTADO_CHOOSING
+		wait = input("waiting:")
+
+		bot.send_message(statement.id, "Wich one do you like?")
+		# TODO set status en bbdd
+		Aux.state = ESTADO_CHOOSING
 
 
+# Escoger receta de las que ha devuelto la api
+# Solo isponible si estas en el estado de escoger, ya has pasado por el general de recetas
 class ChooseRecipe(object):
-    def __init__(self, **kwargs):
-        pass
+	def __init__(self, **kwargs):
+		pass
 
-    @staticmethod
-    def can_process(statement, status, mongo):
-        if status == ESTADO_CHOOSING:
-            return True
+	@staticmethod
+	def can_process(statement, status, mongo):
+		if Aux.state == ESTADO_CHOOSING or status == ESTADO_CHOOSING:
+			return True
+		return False
 
-        return False
+	@staticmethod
+	def process(statement, status, mongo):
+		max = -1
+		# if JaccardSimilarity().compare(Statement(statement.text), Statement(MORE_RECIPE)) > min:
+		#    return 1
 
-    @staticmethod
-    def process(statement, status, mongo):
-        max = -1
-        # if JaccardSimilarity().compare(Statement(statement.text), Statement(MORE_RECIPE)) > min:
-        #    return 1
+		# TODO get RECETAS POSIBLES del mongo
+		# recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
+		for recipe in Aux.recipes:
+			actual = JaccardSimilarity().compare(Statement(statement.text), Statement(recipe["title"]))
+			if actual > max:
+				max = actual
+				selected_recipe = recipe
 
-        # TODO recipes vendra del mongo
-        # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
-        for recipe in Aux.recipes:
-            actual = JaccardSimilarity().compare(Statement(statement.text), Statement(recipe["title"]))
-            if actual > max:
-                max = actual
-                selected_recipe = recipe
+		# TODO guardar la SELECTED RECIPE en la BBDD
+		return max
 
-        # TODO meter la selected recipe en la BBDD y pasar al estado cooking
-        return max
+	@staticmethod
+	def response(statement, bot, mongo):
+		bot.send_message(statement.id, EXCELENT_CHOICE)
+		bot.send_message(statement.id, READY_RECIPE)
+		bot.send_message(statement.id, COOKWARE_RECIPE)
 
-    @staticmethod
-    def response(statement, bot, mongo):
-        bot.send_message(statement.id, EXCELENT_CHOICE)
-        bot.send_message(statement.id, READY_RECIPE)
-        bot.send_message(statement.id, COOKWARE_RECIPE)
+		# TODO get RECETA ACTUAL para tener el id
+		Aux.steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
+		# TODO guardar STEPS enla BBDD y el progresp, el step actual (el 0)
 
+		# TODO revisar/plantear otra manera de ver los pasos para que no sea tan tocho seguido
+		for process in Aux.steps:
+			for step in process["steps"]:
+				for equipment in step["equipment"]:
+					bot.send_message(statement.id, equipment["name"])
 
-        Aux.steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
-        # TODO guardar STEPS enla BBDD y el progresp, el step actual (el 0)
+		bot.send_message(statement.id, "Lets take a look to the ingredients")
+		bot.send_message(statement.id, INGREDIENTS_RECIPE)
 
-        # list1 = recipes[:len(recipes)//2]
-        # list2 = recipes[:len(recipes)//2]
-        # TODO comprobar que la estructura del json de los steps es la correcta --> el steps[0] puede ser de varios!!
-        for step in Aux.steps[0]["steps"]:
-            for equipment in step["equipment"]:
-                bot.send_message(statement.id, equipment["name"])
+		for process in Aux.steps:
+			for step in process["steps"]:
+				for ingredient in step["ingredients"]:
+					bot.send_message(statement.id, ingredient["name"])
 
-        bot.send_message(statement.id, "Lets take a look to the ingredients")
-        bot.send_message(statement.id, INGREDIENTS_RECIPE)
-        for step in Aux.steps[0]["steps"]:
-            for ingredient in step["ingredients"]:
-                bot.send_message(statement.id, ingredient["name"])
-
-        # Todo ¿Se puede poner negrita en los mensajes, para dar enfasis a la palabra exacta que tiene que escribir la persona?
-        bot.send_message(statement.id, START_COOKING)
+		# Todo ¿Se puede poner negrita en los mensajes, para dar enfasis a la palabra exacta que tiene que escribir?
+		bot.send_message(statement.id, START_COOKING)
+		Aux.state = ESTADO_COOKING
 
 
+# Para cuando se esta cocinando una receta
+# Solo se puede acceder si estas en el status de cocinando, ya esta bien para que no se confuda con otras cosas que
+# usen next
 class CookingRecipe(object):
-    def __init__(self, **kwargs):
-        pass
+	def __init__(self, **kwargs):
+		pass
 
-    @staticmethod
-    def can_process(statement, status, mongo):
-        lower_string = statement.text
-        # TODO cambiar estado a Viendo recetas
-        if "start cooking" in lower_string.lower():
-            return True
-        if "next step" in lower_string.lower():
-            return True
-        return False
+	@staticmethod
+	def can_process(statement, status, mongo):
+		if Aux.state == ESTADO_COOKING or status == ESTADO_COOKING:
+			return True
+		return False
 
-    @staticmethod
-    def process(statement, status, mongo):
-        lower_string = statement.text
-        if "next step" in lower_string.lower():
-            return JaccardSimilarity().compare(Statement(statement.text), Statement("next step"))
-        if "start cooking" in lower_string.lower():
-            return JaccardSimilarity().compare(Statement(statement.text), Statement("start cooking"))
-        return -1
+	@staticmethod
+	def process(statement, status, mongo):
+		lower_string = statement.text.lower()
+		if lower_string in "next step":
+			return JaccardSimilarity().compare(Statement(statement.text), Statement("next step"))
+		if lower_string in "start cooking":
+			return JaccardSimilarity().compare(Statement(statement.text), Statement("start cooking"))
+		return -1
 
-    @staticmethod
-    def response(statement, bot, mongo):
+	@staticmethod
+	def response(statement, bot, mongo):
 
-        if Aux.paso_actual == len(Aux.steps[0]["steps"]) - 1:
-            bot.send_message(statement.id, "You are almost done!")
+		if Aux.paso_actual == len(Aux.steps[0]["steps"]) - 1:
+			bot.send_message(statement.id, "You are almost done!")
 
-        if Aux.paso_actual != len(Aux.steps[0]["steps"]):
-            # gran variedad de nombres la verdad :(
-            bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"])
-        else:
-            bot.send_message(statement.id, "Congratulations you have finished the recipe (icono de celebracion)")
-            bot.send_message(statement.id, "Bon apettite (icono de chef)")
-            bot.send_message(statement.id, RATE_MEAL)
-            Aux.state = ESTADO_RATING
+		if Aux.paso_actual != len(Aux.steps[0]["steps"]):
+			# gran variedad de nombres la verdad :(
+			i = 0
+			paso_aux = Aux.paso_actual
+			while i < len(Aux.steps):
+				if Aux.paso_actual >= len(Aux.steps[i]):
+					paso_aux -= len(Aux.steps[i])
+				else:
+					break
+			markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
+			markup.add('prev', 'next')
+			bot.send_message(statement.id, Aux.steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
 
-        # Todo usar BBDD para los pasos
-        Aux.paso_actual = Aux.paso_actual + 1
+		# bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"])
+		else:
+			bot.send_message(statement.id, emoji.emojize("Congratulations you have finished the recipe :clap:", use_aliases=True))
+			# todo sad porque no he encontrado chef https://www.webfx.com/tools/emoji-cheat-sheet/
+			bot.send_message(statement.id, emoji.emojize("Bon apettite :ok_hand:", use_aliases=True))
+			bot.send_message(statement.id, RATE_MEAL)
+			# Todo usar BBDD para el status, ya se ha acabado de cocinar receta
+			Aux.state = ESTADO_RATING
+
+		# Todo usar BBDD para los pasos
+		Aux.paso_actual = Aux.paso_actual + 1
 
 
+# Para poder tirar hacia atras en un paso de receta
+# Solo cuando se esta cocinando asi no coincidira con otras cosas
+# TODO pensar que mas funcionaclidades de navegacion pueden venir bien
 class NavigationReciepe(object):
-    def __init__(self, **kwargs):
-        pass
+	def __init__(self, **kwargs):
+		pass
 
-    @staticmethod
-    def can_process(statement, status, mongo):
-        if Aux.state == ESTADO_COOKING:
-            return True
-        return False
+	@staticmethod
+	def can_process(statement, status, mongo):
+		if Aux.state == ESTADO_COOKING or status == ESTADO_COOKING:
+			return True
+		return False
 
-    @staticmethod
-    def process(statement, status, mongo):
-        return JaccardSimilarity().compare(Statement(statement.text), Statement("previous step"))
+	@staticmethod
+	def process(statement, status, mongo):
+		value1 = JaccardSimilarity().compare(Statement(statement.text), Statement("previous step"))
+		value2 = JaccardSimilarity().compare(Statement(statement.text), Statement("prev"))
+		return max(value1, value2)
 
-    @staticmethod
-    def response(statement, bot, mongo):
-        Aux.paso_actual = Aux.paso_actual - 1
+	@staticmethod
+	def response(statement, bot, mongo):
 
-        if Aux.paso_actual > 0:
-            bot.send_message(statement.id, "This was the previous step")
-            bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"])
-        # Todo usar BBDD para los pasos
+		if Aux.paso_actual > 0:
+			# Todo usar BBDD para get pasos, y get y set estado
+			Aux.paso_actual = Aux.paso_actual - 1
+			bot.send_message(statement.id, "This was the previous step")
+			bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"])
 
 
+# TODO plantearse si separar en 3 casos distintos
+# Get todos los datos de la receta que se esta preparando, solo si se esta cocinando:
+# ver steps
+# ver utensilios
+# ver ingredientes
+# TODO ver como formatear bonito toda esta info
 class MoreInfoRecipe(object):
-    def __init__(self, **kwargs):
-        pass
+	def __init__(self, **kwargs):
+		pass
 
-    @staticmethod
-    def can_process(statement, status, mongo):
-        if "see steps" in statement.text.lower():
-            return True
-        if "see cookware" in statement.text.lower():
-            return True
-        if "see ingredients" in statement.text.lower():
-            return True
+	@staticmethod
+	def can_process(statement, status, mongo):
+		if Aux.state == ESTADO_COOKING or status == ESTADO_COOKING:
+			return True
 
-        return False
+		return False
 
-    @staticmethod
-    def process(statement, status, mongo):
-        if "see steps" in statement.text.lower():
-            return JaccardSimilarity().compare(Statement(statement.text), Statement("see steps"))
+	@staticmethod
+	def process(statement, status, mongo):
+		see_steps = JaccardSimilarity().compare(Statement(statement.text), Statement("see steps"))
+		see_cookware = JaccardSimilarity().compare(Statement(statement.text), Statement("see cookware"))
+		see_ingredients = JaccardSimilarity().compare(Statement(statement.text), Statement("see ingredients"))
+		return max(see_steps, see_cookware, see_ingredients)
 
-        if "see cookware" in statement.text.lower():
-            return JaccardSimilarity().compare(Statement(statement.text), Statement("see cookware"))
+	@staticmethod
+	def response(statement, bot, mongo):
+		see_steps = JaccardSimilarity().compare(Statement(statement.text), Statement("see steps"))
+		see_cookware = JaccardSimilarity().compare(Statement(statement.text), Statement("see cookware"))
+		see_ingredients = JaccardSimilarity().compare(Statement(statement.text), Statement("see ingredients"))
+		opcion = max(see_steps, see_cookware, see_ingredients)
 
-        if "see ingredients" in statement.text.lower():
-            return JaccardSimilarity().compare(Statement(statement.text), Statement("see ingredients"))
+		# TODO pillar los analyzed_steps de la BBDD
+		if opcion == see_steps:
+			bot.send_message(statement.id, ALL_STEPS)
+			for process in Aux.steps:
+				for step in process["steps"]:
+					bot.send_message(statement.id, step["step"])
 
-    @staticmethod
-    def response(statement, bot, mongo):
-        if "see steps" in statement.text.lower():
-            bot.send_message(statement.id, ALL_STEPS)
-            for step in Aux.steps[0]["steps"]:
-                bot.send_message(statement.id, step["step"])
+		if opcion == see_cookware:
+			bot.send_message(statement.id, ALL_COOKWARE)
+			for process in Aux.steps:
+				for step in process["steps"]:
+					for equipment in step["equipment"]:
+						bot.send_message(statement.id, equipment["name"])
 
-        if "see cookware" in statement.text.lower():
-            bot.send_message(statement.id, ALL_COOKWARE)
-            for step in Aux.steps[0]["steps"]:
-                for equipment in step["equipment"]:
-                    bot.send_message(statement.id, equipment["name"])
+		if opcion == see_ingredients:
+			bot.send_message(statement.id, ALL_INGREDIENTS)
+			for process in Aux.steps:
+				for step in process["steps"]:
+					for ingredient in step["ingredients"]:
+						bot.send_message(statement.id, ingredient["name"])
 
-        if "see ingredients" in statement.text.lower():
-            bot.send_message(statement.id, ALL_INGREDIENTS)
-            for step in Aux.steps[0]["steps"]:
-                for ingredient in step["ingredients"]:
-                    bot.send_message(statement.id, ingredient["name"])
+		bot.send_message(statement.id, "Your currently step is:")
+		# Para recetas con varios procesos
+		i = 0
+		paso_aux = Aux.paso_actual
+		while i < len(Aux.steps):
+			if Aux.paso_actual >= len(Aux.steps[i]):
+				paso_aux -= len(Aux.steps[i])
+			else:
+				break
+		bot.send_message(statement.id, Aux.steps[i]["steps"][paso_aux]["step"])
 
-        bot.send_message(statement.id, "Your currently step is:")
-        bot.send_message(statement.id, Aux.steps[0]["steps"][0]["step"])
 
-
+# Para pedir al user que nos puntue la receta que acaba de preparar
 class MealRating(object):
-    def __init__(self, **kwargs):
-        pass
+	def __init__(self, **kwargs):
+		pass
 
-    @staticmethod
-    def can_process(statement, status, mongo):
-        lower_string = statement.text
-        # TODO Controlar que estemos en modo de rating
-        return lower_string.isnumeric()
+	@staticmethod
+	def can_process(statement, status, mongo):
+		return Aux.state == RATE_MEAL or status == RATE_MEAL
 
-    @staticmethod
-    def process(statement, status, mongo):
-        lower_string = statement.text
-        if lower_string.isnumeric():
-            return 1
-        return -1
+	@staticmethod
+	def process(statement, status, mongo):
+		lower_string = statement.text
+		if lower_string.isnumeric():
+			return 1
+		return -1
 
-    @staticmethod
-    def response(statement, bot, mongo):
-        bot.send_message(statement.id, "Thanks for your review, I'll keep it in my HDD for your next meals! :)")
-        # todo, se puede llamar a la del main ¿?
-        Aux.state = ESTADO_MENU
+	@staticmethod
+	def response(statement, bot, mongo):
+		bot.send_message(statement.id, "Thanks for your review, I'll keep it in my HDD for your next meals! :)")
+		# TODO (OPCIONAL) guardar valoraciones de receta para recomendaciones
+		# TODO actualizar status en BBDD
+		# TODO llamar a funcion de inicio
+		Aux.state = ESTADO_MENU

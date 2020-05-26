@@ -119,7 +119,7 @@ class addIngredientNameManually(object):
     def response(statement, bot):
         # Parse ingredients and save them to the database
         if True:
-            bot.send_message(statement.id, emoji.emojize("Nice, item added to you list of ingredients thumbs_up:"))
+            bot.send_message(statement.id, emoji.emojize("Nice, item added to you list of ingredients thumbs_up:"), use_aliases=True)
             # change state of user
         else:
             bot.send_message(statement.id, "This not seem like a cuantity")
