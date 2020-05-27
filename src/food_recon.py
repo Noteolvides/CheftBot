@@ -1,5 +1,4 @@
 from clarifai.rest import ClarifaiApp
-import json
 
 
 def predict_photo(photo):

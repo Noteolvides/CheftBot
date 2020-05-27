@@ -8,7 +8,7 @@ from telebot import types
 from telebot.types import InlineKeyboardMarkup
 from telegram.ext import MessageQueue as mq
 
-from src.message_queue import DelayQueue
+from src.message_queue import QueueGestor, DELAY_TYPE_TEXT, DELAY_TYPE_PHOTO
 
 ESTADO_MENU = 0
 ESTADO_RECETAS = 1
@@ -67,12 +67,12 @@ class SeeRecipes(object):
 														ranking=1).json()
 		# TODO guardar RECETAS POSIBLE de la api en BBDD
 		# queue = MessageQueue()
-		queue = DelayQueue(bot)
+		queue = QueueGestor(bot)
 		for recipe in Aux.recipes:
-			queue.addMessage(statement.id, recipe["title"], False)
-			queue.addMessage(statement.id, recipe["image"], True)
+			queue.add_message(statement.id, recipe["title"], DELAY_TYPE_TEXT)
+			queue.add_message(statement.id, recipe["image"], DELAY_TYPE_PHOTO)
 
-		queue.startQueue()
+		# queue.startQueue()
 		# bot.send_message(statement.id, recipe["title"])
 		# bot.send_photo(statement.id, recipe["image"])
 

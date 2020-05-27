@@ -8,12 +8,12 @@ from src.Model.User import User
 from src.food_recon import predict_photo
 from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredientNameManually, listIngredient
-from src.message_queue import DelayQueue
+from src.message_queue import QueueGestor
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
 from src.chatter import Chatter
 from src.chatter import Statement
 
-API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
+API_TOKEN = '1155345080:AAEh_VkMdKCdDR0jQDb6_O2uDbo8Za6bQzA' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
@@ -26,7 +26,7 @@ chatter = Chatter(
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
 }
-message_queue = DelayQueue(bot)
+message_queue = QueueGestor(bot)
 # message_queue.startQueue()
 
 if __name__ == '__main__':
