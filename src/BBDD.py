@@ -41,17 +41,18 @@ class MongoDB:
 
     # Pantry Querys_____________________________
     # TODO: comprobar antes si el ingrediente que se quiere añadir existe
-    def new_ingredient(self, user, ingredient):
+    def new_ingredient(self, id, ingredient):
         # TODO: Falta imagen
         self.collection.find_one_and_update(
-            {"_id": user.token},
+            {"_id": id},
             {
                 "$push":
                     {
                         "ingredients": [
                             {
                                 "ingredient_name": ingredient.ingredient,
-                                "quantity": ingredient.quantity
+                                "quantity": ingredient.quantity,
+                                "measure": ingredient.unit
                             }
                         ]
                     }
@@ -61,22 +62,22 @@ class MongoDB:
     # fixme: no encuetra nah de nah
     def search_ingredient(self, user, ingredient):
         return self.collection.find_one(
-            {"_id": user.token,"ingredient": ingredient.ingredient}
+            {"_id": user.token, "ingredient": ingredient.ingredient}
         )
 
     def update_ingredient(self, user, ingredient):
         self.collection.update(
             {"_id": user.token, "ingredient": ingredient.ingredient
-            },
+             },
             {
                 "$set":
-                {
-                    "_id": user.token,  # Codigo id único en mongo db
-                    "ingredients": {
-                        "ingredient_name": [ingredient.ingredient],
-                        "quantity": ingredient.quantity
+                    {
+                        "_id": user.token,  # Codigo id único en mongo db
+                        "ingredients": {
+                            "ingredient_name": [ingredient.ingredient],
+                            "quantity": ingredient.quantity
+                        }
                     }
-                }
             }
         )
 
