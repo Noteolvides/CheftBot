@@ -13,7 +13,7 @@ from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, More
 from src.chatter import Chatter
 from src.chatter import Statement
 
-API_TOKEN = '1155345080:AAEh_VkMdKCdDR0jQDb6_O2uDbo8Za6bQzA' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
+API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
