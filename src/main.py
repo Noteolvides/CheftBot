@@ -2,8 +2,13 @@ import telebot
 import emoji
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+from src.BBDD import MongoDB
+from src.Model.User import User
+from src.food_recon import predict_photo
 from src.logger import startLogger
-from src.ingredients_Adapter import addIngredient
+from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredientNameManually, listIngredient
+from src.message_queue import QueueGestor
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
 from src.chatter import Chatter
 from src.chatter import Statement
@@ -11,17 +16,24 @@ from src.chatter import Statement
 API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
-
+mongo = MongoDB()
 chatter = Chatter(
-    [addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, NavigationReciepe, MealRating])
+    [addIngredientNameManually, ingredientChosser,listIngredient, addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe,
+     CookingRecipe, MoreInfoRecipe,
+     NavigationReciepe,
+     MealRating], mongo)
 
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
 }
+message_queue = QueueGestor(bot)
+# message_queue.startQueue()
 
 if __name__ == '__main__':
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
+        mongo.new_user(User(message.chat.id, "", 0, ""))
+        mongo.update_user_status(message.chat.id, 0)
         chat_id = message.chat.id
         bot.send_message(chat_id, "This is Chefbot")
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
@@ -43,8 +55,7 @@ if __name__ == '__main__':
     def generic_text(message):
         s = Statement(message.text, message.chat.id)
         can_answer = chatter.checkIfMatch(statement=s)
-        if can_answer != -1:
-            chatter.generateResponse(can_answer, s, bot)
+        chatter.generateResponse(can_answer, s, bot)
 
 
     def gen_markup():
@@ -65,19 +76,23 @@ if __name__ == '__main__':
             bot.answer_callback_query(call.id, "Answer is No")
             bot.send_message(call.message.chat.id, emoji.emojize("Sorry, you will have to add it by hand "
                                                                  ":disappointed_face:"))
+        elif call.data == "add_ingredient":
+            addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
+        elif call.data == "list_ingredient":
+            listIngredient.response(Statement("", call.message.chat.id), bot, mongo)
 
 
     @bot.message_handler(content_types=['photo'])
     def photo(message):
-        # TODO(Mirar que estamos en el stado de meter ingrediente)
-        file_id = message.photo[0].file_id
-        file_info = bot.get_file(file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        text = emoji.emojize("Humm..., let me think :thinking_face:")
-        bot.send_message(message.chat.id, text)
-        item = 'It might be an ' + 'alimento!'  # predict_photo(downloaded_file)
-        bot.reply_to(message, item)
-        bot.send_message(message.chat.id, "Am i right bro?", reply_markup=gen_markup())
+        if mongo.search_user_by_id(message.chat.id)["status"] == 22:
+            file_id = message.photo[0].file_id
+            file_info = bot.get_file(file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
+            text = emoji.emojize("Humm..., let me think :thinking_face:")
+            bot.send_message(message.chat.id, text)
+            item = 'It might be an ' + predict_photo(downloaded_file)
+            bot.reply_to(message, item)
+            bot.send_message(message.chat.id, "Am i right bro?", reply_markup=gen_markup())
 
 
     bot.polling()
