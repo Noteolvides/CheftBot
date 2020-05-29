@@ -6,6 +6,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from src.BBDD import MongoDB
 from src.Model.User import User
 from src.food_recon import predict_photo
+from src.general_adapter import StopOption
 from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredientNameManually, listIngredient
 from src.message_queue import QueueGestor
@@ -13,15 +14,15 @@ from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, More
 from src.chatter import Chatter
 from src.chatter import Statement
 
-API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
+API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
 chatter = Chatter(
-    [addIngredientNameManually, ingredientChosser,listIngredient, addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe,
-     CookingRecipe, MoreInfoRecipe,
-     NavigationReciepe,
-     MealRating], mongo)
+    [addIngredientNameManually, ingredientChosser, listIngredient, addIngredient,
+     SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating,
+     StopOption],
+    mongo)
 
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
@@ -80,7 +81,6 @@ if __name__ == '__main__':
             addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
         elif call.data == "list_ingredient":
             listIngredient.response(Statement("", call.message.chat.id), bot, mongo)
-        elif call.data == ""
 
 
     @bot.message_handler(content_types=['photo'])
