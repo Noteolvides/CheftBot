@@ -1,4 +1,6 @@
+import json
 from difflib import SequenceMatcher
+import spoonacular as sp
 
 import emoji
 from spacy.lang.en import English
@@ -6,6 +8,8 @@ from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from src.ingredientsParser import parserIngredient, ingredientParser
+
+api = sp.API("aa9cc6861144497a9ce2ab7ffa864984")
 
 
 def similar(a, b):
@@ -45,7 +49,7 @@ class listIngredient(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if state == 2:
+        if state == 2 or similar(statement.text, "list ingredient") > 0.8:
             return True
         return False
 
@@ -61,7 +65,7 @@ class listIngredient(object):
             ingredient = ingredientList[0]
             ing = ingredientParser(ingredient["quantity"], ingredient["measure"], ingredient["ingredient_name"])
             bot.send_message(statement.id, ing.print())
-        else:
+        if len(ingredients) == 0:
             bot.send_message(statement.id, "Seems like you dont have ingredients")
         # change state of user
 
@@ -87,6 +91,13 @@ class addIngredient(object):
         mongo.update_user_status(statement.id, 22)
 
 
+def printIngridient(ingredient):
+    string = ""
+    string += "Ingredient : " + ingredient["name"] + emoji.emojize(" :red_apple:", use_aliases=True) + "\n"
+    string += "Quantity : " + str(ingredient["amount"]) + str(ingredient["unit"]) + emoji.emojize(" :input_numbers:", use_aliases=True) + "\n"
+    return string
+
+
 class addIngredientNameManually(object):
 
     @staticmethod
@@ -103,14 +114,17 @@ class addIngredientNameManually(object):
 
     @staticmethod
     def response(statement, bot, mongo):
-        ingredient = parserIngredient(statement.text)
-        if ingredient is not None:
-            bot.send_message(statement.id, "Is this the item that you wanted to add?")
-            bot.send_message(statement.id, ingredient.print())
-            # Save item to pending atributes for now always it is okey
-            mongo.new_ingredient(statement.id, ingredient)
+        response = api.parse_ingredients(statement.text)
+        if response.status_code == 200:
+            ingredient = json.loads(response.text)
+            bot.send_message(statement.id, printIngridient(ingredient[0]))
+            markup = InlineKeyboardMarkup()
+            markup.row_width = 2
+            markup.add(InlineKeyboardButton("Yes", callback_data="yes_add_ingredient"),
+                       InlineKeyboardButton("No", callback_data="no_add_ingredient"))
+            bot.send_message(statement.id, "Is this the item that you wanted to add?", reply_markup=markup)
+            mongo.possible_ingredient(statement.id, ingredient[0])
             mongo.update_user_status(statement.id, 0)
-
         else:
             bot.send_message(statement.id, "This not seem like an ingredient")
             bot.send_message(statement.id, "Could you repeat?")

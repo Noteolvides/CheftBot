@@ -29,7 +29,7 @@ class MongoDB:
                     "_id": user.token,
                     "username": user.username,
                     "status": user.status,
-                    "current_keyboard": user.current_keyboard
+                    "possible_ingredient": ""
                 }
             )
 
@@ -39,55 +39,62 @@ class MongoDB:
             {"$set": {"status": status}}
         )
 
-    # Pantry Querys_____________________________
-    # TODO: comprobar antes si el ingrediente que se quiere añadir existe
-    def new_ingredient(self, id, ingredient):
-        # TODO: Falta imagen
+    def possible_ingredient(self, token, ingredient):
         self.collection.find_one_and_update(
-            {"_id": id},
-            {
-                "$push":
-                    {
-                        "ingredients": [
-                            {
-                                "ingredient_name": ingredient.ingredient,
-                                "quantity": ingredient.quantity,
-                                "measure": ingredient.unit
-                            }
-                        ]
-                    }
-            }
+            {"_id": token},
+            {"$set": {"possible_ingredient": ingredient}}
         )
 
-    # fixme: no encuetra nah de nah
-    def search_ingredient(self, user, ingredient):
-        return self.collection.find_one(
-            {"_id": user.token, "ingredient": ingredient.ingredient}
-        )
+        # Pantry Querys_____________________________
+        # TODO: comprobar antes si el ingrediente que se quiere añadir existe
 
-    def update_ingredient(self, user, ingredient):
-        self.collection.update(
-            {"_id": user.token, "ingredient": ingredient.ingredient
-             },
-            {
-                "$set":
-                    {
-                        "_id": user.token,  # Codigo id único en mongo db
-                        "ingredients": {
-                            "ingredient_name": [ingredient.ingredient],
-                            "quantity": ingredient.quantity
+        def new_ingredient(self, id, ingredient):
+            # TODO: Falta imagen
+            self.collection.find_one_and_update(
+                {"_id": id},
+                {
+                    "$push":
+                        {
+                            "ingredients": [
+                                {
+                                    "ingredient_name": ingredient.ingredient,
+                                    "quantity": ingredient.quantity,
+                                    "measure": ingredient.unit
+                                }
+                            ]
                         }
-                    }
-            }
-        )
+                }
+            )
 
-    # ShoppingList Querys_______________________
+        # fixme: no encuetra nah de nah
+        def search_ingredient(self, user, ingredient):
+            return self.collection.find_one(
+                {"_id": user.token, "ingredient": ingredient.ingredient}
+            )
 
-    # Recipies API______________________________
+        def update_ingredient(self, user, ingredient):
+            self.collection.update(
+                {"_id": user.token, "ingredient": ingredient.ingredient
+                 },
+                {
+                    "$set":
+                        {
+                            "_id": user.token,  # Codigo id único en mongo db
+                            "ingredients": {
+                                "ingredient_name": [ingredient.ingredient],
+                                "quantity": ingredient.quantity
+                            }
+                        }
+                }
+            )
 
-    def insert_new_recipie(self, recipie):
-        self.collection.insert(
-            {
+        # ShoppingList Querys_______________________
 
-            }
-        )
+        # Recipies API______________________________
+
+        def insert_new_recipie(self, recipie):
+            self.collection.insert(
+                {
+
+                }
+            )

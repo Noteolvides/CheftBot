@@ -125,7 +125,7 @@ class ingredientParser(object):
 
     def print(self):
         string = ""
-        string += "Ingredient : " + self.ingredient + "\n"
+        string += "Ingredient : " + self.ingredient + emoji.emojize(":red_apple:", use_aliases=True) + "\n"
         string += "Quantity : " + self.quantity + "\n"
         string += "Mesure : " + self.unit
 
