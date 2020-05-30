@@ -45,56 +45,49 @@ class MongoDB:
             {"$set": {"possible_ingredient": ingredient}}
         )
 
-        # Pantry Querys_____________________________
-        # TODO: comprobar antes si el ingrediente que se quiere añadir existe
+    def get_possible_ingredient(self, token):
+        user = self.search_user_by_id(token)
+        return user["possible_ingredient"]
 
-        def new_ingredient(self, id, ingredient):
-            # TODO: Falta imagen
-            self.collection.find_one_and_update(
-                {"_id": id},
-                {
-                    "$push":
-                        {
-                            "ingredients": [
-                                {
-                                    "ingredient_name": ingredient.ingredient,
-                                    "quantity": ingredient.quantity,
-                                    "measure": ingredient.unit
-                                }
-                            ]
-                        }
-                }
-            )
+    # Pantry Querys_____________________________
+    # TODO: comprobar antes si el ingrediente que se quiere añadir existe
 
-        # fixme: no encuetra nah de nah
-        def search_ingredient(self, user, ingredient):
-            return self.collection.find_one(
-                {"_id": user.token, "ingredient": ingredient.ingredient}
-            )
+    def new_ingredient(self, id, ingredientInput):
+        self.collection.find_one_and_update(
+            {"_id": id},
+            {
+                "$push":
+                    {
+                        "ingredients": ingredientInput
+                    }
+            }
+        )
 
-        def update_ingredient(self, user, ingredient):
-            self.collection.update(
-                {"_id": user.token, "ingredient": ingredient.ingredient
-                 },
-                {
-                    "$set":
-                        {
-                            "_id": user.token,  # Codigo id único en mongo db
-                            "ingredients": {
-                                "ingredient_name": [ingredient.ingredient],
-                                "quantity": ingredient.quantity
-                            }
-                        }
-                }
-            )
+    # fixme: no encuetra nah de nah
+    def get_ingredients(self, id):
+        user = self.search_user_by_id(id)
+        return user["ingredients"]
 
-        # ShoppingList Querys_______________________
+    def get_ingredient_by_name(self, id, name):
+        return self.collection.find_one(
 
-        # Recipies API______________________________
+            {"_id": id, "ingredients.name": name}
 
-        def insert_new_recipie(self, recipie):
-            self.collection.insert(
-                {
+        )
 
-                }
-            )
+    def update_ingredient(self, id, ingredient):
+        return self.collection.update(
+            {"_id": id, "ingredients.name": ingredient["name"]},
+            {"$inc": {"ingredients.$.amount": ingredient["amount"]}}
+        )
+
+    # ShoppingList Querys_______________________
+
+    # Recipies API______________________________
+
+    def insert_new_recipie(self, recipie):
+        pass
+
+    def delete_ingredient_by_name(self, id, nameIngredient):
+        self.collection.update_one({"_id": id, "ingredients.name": nameIngredient}, {"$unset": {"ingredients.$": 1}})
+        why = self.collection.update({"_id": id}, {"$pull": {"ingredients": None}})

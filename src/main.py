@@ -1,3 +1,5 @@
+import re
+
 import telebot
 import emoji
 from telebot import types
@@ -18,7 +20,8 @@ bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
 chatter = Chatter(
-    [addIngredientNameManually, ingredientChosser,listIngredient, addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe,
+    [addIngredientNameManually, ingredientChosser, listIngredient, addIngredient, SeeRecipes, ChooseRecipe,
+     MoreInfoRecipe,
      CookingRecipe, MoreInfoRecipe,
      NavigationReciepe,
      MealRating], mongo)
@@ -53,17 +56,12 @@ if __name__ == '__main__':
 
     @bot.message_handler(content_types=['text'])
     def generic_text(message):
-        s = Statement(message.text, message.chat.id)
-        can_answer = chatter.checkIfMatch(statement=s)
-        chatter.generateResponse(can_answer, s, bot)
-
-
-    def gen_markup():
-        markup = InlineKeyboardMarkup()
-        markup.row_width = 2
-        markup.add(InlineKeyboardButton("Yes", callback_data="cb_yes"),
-                   InlineKeyboardButton("No", callback_data="cb_no"))
-        return markup
+        try:
+            s = Statement(message.text, message.chat.id)
+            can_answer = chatter.checkIfMatch(statement=s)
+            chatter.generateResponse(can_answer, s, bot)
+        except:
+            bot.send_message(message.chat.id, "Could you repeat?")
 
 
     @bot.callback_query_handler(func=lambda call: True)
@@ -76,24 +74,53 @@ if __name__ == '__main__':
             bot.answer_callback_query(call.id, "Answer is No")
             bot.send_message(call.message.chat.id, emoji.emojize("Sorry, you will have to add it by hand "
                                                                  ":disappointed_face:"))
-        elif call.data == "add_ingredient":
+        elif call.data == "add_ingredients":
+            bot.delete_message(call.message.chat.id, call.message.message_id)
             addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
-        elif call.data == "list_ingredient":
+        elif call.data == "list_ingredients":
             listIngredient.response(Statement("", call.message.chat.id), bot, mongo)
-        elif call.data == ""
+        elif call.data == "no_add_ingredient":
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.delete_message(call.message.chat.id, call.message.message_id - 1)
+            bot.send_message(call.message.chat.id, "Ouch,could you repeat again?")
+            addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
+        elif call.data == "yes_add_ingredient":
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.send_message(call.message.chat.id, "Yeah,knew it, i am a hungry genius,:P")
+            posible_ingredient = mongo.get_possible_ingredient(call.message.chat.id)
+            if mongo.get_ingredient_by_name(call.message.chat.id, posible_ingredient["name"]) is None:
+                mongo.new_ingredient(call.message.chat.id, posible_ingredient)
+            else:
+                mongo.update_ingredient(call.message.chat.id, posible_ingredient)
+        elif call.data == "remove_ingredient":
+            regex = r"(?<=Ingredient : )(.*)(?=Quantity : )"
+            test_str = call.message.text.replace('\n', '')
+            matches = re.search(regex, test_str, re.MULTILINE)
+            ingredient_en = matches.group().encode("ascii", "ignore")
+            ingredient_de = ingredient_en.decode()
+            mongo.delete_ingredient_by_name(call.message.chat.id, ingredient_de)
+            bot.delete_message(call.message.chat.id, call.message.message_id)
 
 
     @bot.message_handler(content_types=['photo'])
     def photo(message):
-        if mongo.search_user_by_id(message.chat.id)["status"] == 22:
-            file_id = message.photo[0].file_id
-            file_info = bot.get_file(file_id)
-            downloaded_file = bot.download_file(file_info.file_path)
-            text = emoji.emojize("Humm..., let me think :thinking_face:")
-            bot.send_message(message.chat.id, text)
-            item = 'It might be an ' + predict_photo(downloaded_file)
-            bot.reply_to(message, item)
-            bot.send_message(message.chat.id, "Am i right bro?", reply_markup=gen_markup())
+        bot.send_message(message.chat.id, "Are you trying to add an ingredient, lest see if our system can figure out "
+                                          "what it is")
+        file_id = message.photo[0].file_id
+        file_info = bot.get_file(file_id)
+        downloaded_file = bot.download_file(file_info.file_path)
+        text = emoji.emojize("Humm..., let me think :thinking_face:")
+        bot.send_message(message.chat.id, text)
+        ingredient = predict_photo(downloaded_file)
+        item = 'It might be an ' + ingredient
+        bot.reply_to(message, item)
+        markup = InlineKeyboardMarkup()
+        markup.row_width = 2
+        markup.add(InlineKeyboardButton("Yes", callback_data="yes_add_ingredient"),
+                   InlineKeyboardButton("No", callback_data="no_add_ingredient"))
+        bot.send_message(message.chat.id, "Am i right bro?", reply_markup=markup)
+        posible_ingredient = {"name": ingredient, "amount": 0, "unit": ""}
+        mongo.possible_ingredient(message.chat.id, posible_ingredient)
 
 
     bot.polling()
