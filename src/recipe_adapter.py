@@ -85,7 +85,7 @@ class SeeRecipes(object):
 
         # bot.send_message(statement.id, "Wich one do you like?")
         # queue.add_message(statement.id, "Wich one do you like?", DELAY_TYPE_TEXT)
-        queue(bot.send_message, chat_id=statement.id, text="Wich one do you like?")
+        queue(bot.send_message, chat_id=statement.id, text="Which one do you like?")
 
         Aux.state = ESTADO_CHOOSING
         mongo.update_user_status(statement.id, ESTADO_CHOOSING)

@@ -11,7 +11,7 @@ from src.food_recon import predict_photo
 from src.general_adapter import StopOption
 from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredientNameManually, listIngredient, \
-    yesIngredient, noIngredient
+    yesIngredient, noIngredient, removeIngredient
 from src.message_queue import QueueGestor
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
 from src.chatter import Chatter
@@ -25,7 +25,7 @@ mongo = MongoDB()
 chatter = Chatter(
     [addIngredientNameManually, ingredientChosser, listIngredient, addIngredient,
      SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating,
-     StopOption, yesIngredient, noIngredient],
+     StopOption, yesIngredient, noIngredient, removeIngredient],
     mongo)
 
 commands = {  # command description used in the "help" command
@@ -101,7 +101,7 @@ if __name__ == '__main__':
                     mongo.new_ingredient(call.message.chat.id, posible_ingredient)
                 else:
                     mongo.update_ingredient(call.message.chat.id, posible_ingredient)
-                mongo.update_user_status(call.message.chat.id, 0)
+                mongo.update_user_status(call.message.chat.id, 22)
             elif call.data == "remove_ingredient":
                 regex = r"(?<=Ingredient : )(.*)(?=Quantity : )"
                 test_str = call.message.text.replace('\n', '')

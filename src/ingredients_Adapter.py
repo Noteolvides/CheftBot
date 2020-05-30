@@ -49,13 +49,13 @@ class listIngredient(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if similar(statement.text, "list ingredient") > 0.8:
+        if similar(statement.text, "list ingredient") > 0.8 or state == 2 and similar(statement.text, "list"):
             return True
         return False
 
     @staticmethod
     def process(statement, state, mongo):
-        return similar(statement.text, "list ingredient")
+        return max(similar(statement.text, "list ingredient"),similar(statement.text, "list"))
 
     @staticmethod
     def response(statement, bot, mongo):
@@ -82,13 +82,13 @@ class addIngredient(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if similar(statement.text, "add ingredients") > 0.8:
+        if similar(statement.text, "add ingredients") > 0.8 or state == 2 and similar(statement.text, "add"):
             return True
         return False
 
     @staticmethod
     def process(statement, state, mongo):
-        return similar(statement.text, "add ingredient")
+        return max(similar(statement.text, "add ingredient"), similar(statement.text, "add"))
 
     @staticmethod
     def response(statement, bot, mongo):
@@ -187,3 +187,21 @@ class addIngredientNameManually(object):
         except:
             bot.send_message(statement.id, "This not seem like an ingredient")
             bot.send_message(statement.id, "Could you repeat?")
+
+
+class removeIngredient(object):
+
+    @staticmethod
+    def can_process(statement, state, mongo):
+        if similar(statement.text, "remove ingredient") > 0.8 or state == 2 and similar(statement.text, "remove"):
+            return True
+        return False
+
+    @staticmethod
+    def process(statement, state, mongo):
+        return max(similar(statement.text, "remove ingredient"), similar(statement.text, "remove"))
+
+    @staticmethod
+    def response(statement, bot, mongo):
+        bot.send_message(statement.id, "If you want to remove an ingredient, list the ingredients and select one "
+                                       "to delete it")
