@@ -38,7 +38,13 @@ if __name__ == '__main__':
         mongo.new_user(User(message.chat.id, "", 0, ""))
         mongo.update_user_status(message.chat.id, 0)
         chat_id = message.chat.id
-        bot.send_message(chat_id, "This is Chefbot")
+        bot.send_message(chat_id, "Welcome to chefbot")
+        bot.send_message(chat_id, "In this chatbot you can find a set of tools to develop your culinary abilities")
+        bot.send_message(chat_id, "In the Shopping list you could add the products that lack to make your wonderful dishes")
+        bot.send_message(chat_id, "In the Ingredients you could add the products that you already have")
+        bot.send_message(chat_id, "In the Recipes you can choose a lot of recipies to make :)")
+        bot.send_message(chat_id, "Come on, what are you waiting for\n\n")
+
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         markup.add('Shopping list', 'Ingredients', 'Recipes')
         bot.reply_to(message, 'What would you like to do', reply_markup=markup)
@@ -79,7 +85,29 @@ if __name__ == '__main__':
             addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
         elif call.data == "list_ingredients":
             listIngredient.response(Statement("", call.message.chat.id), bot, mongo)
-        elif call.data == ""
+        elif call.data == "no_add_ingredient":
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.delete_message(call.message.chat.id, call.message.message_id - 1)
+            bot.send_message(call.message.chat.id, "Ouch,could you repeat again?")
+            addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
+            mongo.update_user_status(call.message.chat.id, 22)
+        elif call.data == "yes_add_ingredient":
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+            bot.send_message(call.message.chat.id, "Yeah,knew it, i am a hungry genius,:P")
+            posible_ingredient = mongo.get_possible_ingredient(call.message.chat.id)
+            if mongo.get_ingredient_by_name(call.message.chat.id, posible_ingredient["name"]) is None:
+                mongo.new_ingredient(call.message.chat.id, posible_ingredient)
+            else:
+                mongo.update_ingredient(call.message.chat.id, posible_ingredient)
+            mongo.update_user_status(call.message.chat.id, 0)
+        elif call.data == "remove_ingredient":
+            regex = r"(?<=Ingredient : )(.*)(?=Quantity : )"
+            test_str = call.message.text.replace('\n', '')
+            matches = re.search(regex, test_str, re.MULTILINE)
+            ingredient_en = matches.group().encode("ascii", "ignore")
+            ingredient_de = ingredient_en.decode()
+            mongo.delete_ingredient_by_name(call.message.chat.id, ingredient_de)
+            bot.delete_message(call.message.chat.id, call.message.message_id)
 
 
     @bot.message_handler(content_types=['photo'])
