@@ -101,6 +101,7 @@ if __name__ == '__main__':
                     mongo.new_ingredient(call.message.chat.id, posible_ingredient)
                 else:
                     mongo.update_ingredient(call.message.chat.id, posible_ingredient)
+                bot.send_message(call.message.chat.id, "You can add another one, or do other things")
                 mongo.update_user_status(call.message.chat.id, 22)
             elif call.data == "remove_ingredient":
                 regex = r"(?<=Ingredient : )(.*)(?=Quantity : )"

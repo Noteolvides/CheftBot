@@ -49,13 +49,14 @@ class listIngredient(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if similar(statement.text, "list ingredient") > 0.8 or state == 2 and similar(statement.text, "list"):
+        if similar(statement.text, "list ingredient") > 0.8 or (state == 22 or state == 2) and similar(statement.text,
+                                                                                                       "list"):
             return True
         return False
 
     @staticmethod
     def process(statement, state, mongo):
-        return max(similar(statement.text, "list ingredient"),similar(statement.text, "list"))
+        return max(similar(statement.text, "list ingredient"), similar(statement.text, "list"))
 
     @staticmethod
     def response(statement, bot, mongo):
@@ -82,7 +83,8 @@ class addIngredient(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if similar(statement.text, "add ingredients") > 0.8 or state == 2 and similar(statement.text, "add"):
+        if similar(statement.text, "add ingredients") > 0.8 or (state == 22 or state == 2) and similar(statement.text,
+                                                                                                       "add"):
             return True
         return False
 
@@ -121,7 +123,8 @@ class yesIngredient(object):
             mongo.new_ingredient(statement.id, posible_ingredient)
         else:
             mongo.update_ingredient(statement.id, posible_ingredient)
-        mongo.update_user_status(statement.id, 0)
+        mongo.update_user_status(statement.id, 22)
+        bot.send_message(statement.id, "You can add another one, or do other things")
 
 
 class noIngredient(object):
@@ -165,7 +168,7 @@ class addIngredientNameManually(object):
 
     @staticmethod
     def process(statement, state, mongo):
-        return 1
+        return 0.8
 
     @staticmethod
     def response(statement, bot, mongo):
@@ -193,7 +196,8 @@ class removeIngredient(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if similar(statement.text, "remove ingredient") > 0.8 or state == 2 and similar(statement.text, "remove"):
+        if similar(statement.text, "remove ingredient") > 0.8 or (state == 22 or state == 2) and similar(statement.text,
+                                                                                                         "remove"):
             return True
         return False
 
