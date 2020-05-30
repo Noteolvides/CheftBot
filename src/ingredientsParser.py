@@ -131,6 +131,5 @@ class ingredientParser(object):
 
         return string
 
-
 if __name__ == '__main__':
     print(parserIngredient("10 kg apples"))

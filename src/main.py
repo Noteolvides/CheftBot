@@ -12,6 +12,7 @@ from src.message_queue import QueueGestor
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
 from src.chatter import Chatter
 from src.chatter import Statement
+from src.shoppingList import DeleteItem, AddItem, ListItems
 
 API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
@@ -19,9 +20,7 @@ logger = startLogger()
 mongo = MongoDB()
 chatter = Chatter(
     [addIngredientNameManually, ingredientChosser,listIngredient, addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe,
-     CookingRecipe, MoreInfoRecipe,
-     NavigationReciepe,
-     MealRating], mongo)
+     CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating, AddItem, DeleteItem, ListItems], mongo)
 
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
