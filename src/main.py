@@ -8,6 +8,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from src.BBDD import MongoDB
 from src.Model.User import User
 from src.food_recon import predict_photo
+from src.general_adapter import StopOption
 from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredientNameManually, listIngredient
 from src.message_queue import QueueGestor
@@ -15,16 +16,15 @@ from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, More
 from src.chatter import Chatter
 from src.chatter import Statement
 
-API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
+API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
 chatter = Chatter(
-    [addIngredientNameManually, ingredientChosser, listIngredient, addIngredient, SeeRecipes, ChooseRecipe,
-     MoreInfoRecipe,
-     CookingRecipe, MoreInfoRecipe,
-     NavigationReciepe,
-     MealRating], mongo)
+    [addIngredientNameManually, ingredientChosser, listIngredient, addIngredient,
+     SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating,
+     StopOption],
+    mongo)
 
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
@@ -79,27 +79,7 @@ if __name__ == '__main__':
             addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
         elif call.data == "list_ingredients":
             listIngredient.response(Statement("", call.message.chat.id), bot, mongo)
-        elif call.data == "no_add_ingredient":
-            bot.delete_message(call.message.chat.id, call.message.message_id)
-            bot.delete_message(call.message.chat.id, call.message.message_id - 1)
-            bot.send_message(call.message.chat.id, "Ouch,could you repeat again?")
-            addIngredient.response(Statement("", call.message.chat.id), bot, mongo)
-        elif call.data == "yes_add_ingredient":
-            bot.delete_message(call.message.chat.id, call.message.message_id)
-            bot.send_message(call.message.chat.id, "Yeah,knew it, i am a hungry genius,:P")
-            posible_ingredient = mongo.get_possible_ingredient(call.message.chat.id)
-            if mongo.get_ingredient_by_name(call.message.chat.id, posible_ingredient["name"]) is None:
-                mongo.new_ingredient(call.message.chat.id, posible_ingredient)
-            else:
-                mongo.update_ingredient(call.message.chat.id, posible_ingredient)
-        elif call.data == "remove_ingredient":
-            regex = r"(?<=Ingredient : )(.*)(?=Quantity : )"
-            test_str = call.message.text.replace('\n', '')
-            matches = re.search(regex, test_str, re.MULTILINE)
-            ingredient_en = matches.group().encode("ascii", "ignore")
-            ingredient_de = ingredient_en.decode()
-            mongo.delete_ingredient_by_name(call.message.chat.id, ingredient_de)
-            bot.delete_message(call.message.chat.id, call.message.message_id)
+        elif call.data == ""
 
 
     @bot.message_handler(content_types=['photo'])
