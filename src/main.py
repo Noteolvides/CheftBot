@@ -41,7 +41,7 @@ if __name__ == '__main__':
         mongo.update_user_status(message.chat.id, 0)
         chat_id = message.chat.id
         bot.send_message(chat_id,
-                         "<b>Welcome to chefbot</b>\nIn this chatbot you can find a set of tools to develop your culinary abilities\n<i>Shopping list : You can add the missing products.</i>\n<i>Ingredients : You can add the products that you already have.</i>\n<i>Ingredients : You can choose a lot of recipies to make :).</i>\n<u>Come on, what are you waiting for</u>",
+                         "<b>Welcome to chefbot</b>\nIn this chatbot you can find a set of tools to develop your culinary abilities\n<i>Shopping list : You can add the missing products.</i>\n<i>Ingredients : You can add the products that you already have.</i>\n<i>Recepies : You can choose a lot of recipies to make :).</i>\n<u>Come on, what are you waiting for</u>",
                          parse_mode="HTML")
         markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
         markup.add('Shopping list', 'Ingredients', 'Recipes')

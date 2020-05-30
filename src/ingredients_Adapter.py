@@ -10,6 +10,8 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from src.chatter import Statement
 from src.randomEmoji import random_emoji, UNICODE_VERSION
 
+listOfKeys = ["aa9cc6861144497a9ce2ab7ffa864984", "8f73d348bf9d4f01b24731f418c9f6b2",
+              "bba58a1c79234e139e3785c6fbceb313"]
 api = sp.API("aa9cc6861144497a9ce2ab7ffa864984")
 
 
