@@ -16,13 +16,14 @@ class MongoDB:
 
     def new_user(self, user):
         if self.search_user_by_id(user.token) is None:
-            self.collection = self.db["CB_User"]
-            self.collection.insert_one({
-                "_id": user.token,
-                "username": user.username,
-                "status": user.status,
-                "current_keyboard": user.current_keyboard
-            })
+            self.collection.insert_one(
+                {
+                    "_id": user.token,
+                    "username": user.username,
+                    "status": user.status,
+                    "possible_ingredient": ""
+                }
+            )
 
     def update_user_status(self, token, status):
         self.collection = self.db["CB_User"]
@@ -31,26 +32,53 @@ class MongoDB:
             {"$set": {"status": status}}
         )
 
+    def possible_ingredient(self, token, ingredient):
+        self.collection.find_one_and_update(
+            {"_id": token},
+            {"$set": {"possible_ingredient": ingredient}}
+        )
+
+    def get_possible_ingredient(self, token):
+        user = self.search_user_by_id(token)
+        return user["possible_ingredient"]
+
     # Pantry Querys_____________________________
     # TODO: comprobar antes si el ingrediente que se quiere añadir existe
     def new_ingredient(self, user_id, ingredient):
         # TODO: Falta imagen
+
+    def new_ingredient(self, user_id, ingredientInput):
         self.collection.find_one_and_update(
             {"_id": user_id},
             {"$push":
                 {
                     "ingredients":
                         {
-                            "ingredient_name": ingredient.ingredient,
-                            "quantity": ingredient.quantity,
+                            "ingredient_name": ingredientInput.ingredient,
+                            "quantity": ingredientInput.quantity,
                         }
                 }
+            {"_id": id},
+            {
+                "$push":
+                    {
+                        "ingredients": ingredientInput
+                    }
             }
         )
 
     def search_ingredient(self, user, ingredient):
+    # fixme: no encuetra nah de nah
+    def get_ingredients(self, id):
+        user = self.search_user_by_id(id)
+        return user["ingredients"]
+
+    def get_ingredient_by_name(self, user_id, name):
         return self.collection.find_one(
-            {"_id": user.token, "ingredients": [{"ingredient_name": ingredient.ingredient}]}
+            {"_id": user_id, "ingredients": [{"ingredient_name": name}]}
+
+            {"_id": id, "ingredients.name": name}
+
         )
 
     def update_ingredient(self, user, ingredient):
@@ -65,6 +93,10 @@ class MongoDB:
                     }
                 }
             }
+    def update_ingredient(self, id, ingredient):
+        return self.collection.update(
+            {"_id": id, "ingredients.name": ingredient["name"]},
+            {"$inc": {"ingredients.$.amount": ingredient["amount"]}}
         )
 
     # ShoppingList Querys_______________________
@@ -110,6 +142,10 @@ class MongoDB:
         # TODO: hace falta controlar que no repiten las recipies
         self.collection = self.db["CB_Recipies"]
         self.collection.insert({recipie})
+        pass
 
     def delete_item(self, user_id, item):
         pass
+    def delete_ingredient_by_name(self, id, nameIngredient):
+        self.collection.update_one({"_id": id, "ingredients.name": nameIngredient}, {"$unset": {"ingredients.$": 1}})
+        why = self.collection.update({"_id": id}, {"$pull": {"ingredients": None}})

@@ -29,6 +29,8 @@ class QueueGestor(object):
 		if type == DELAY_TYPE_PHOTO:
 			self.queues[chat_id](self.bot.send_photo, chat_id, message)
 
+		self.queues[chat_id](self.bot.send_chat_action, chat_id=chat_id, action=telegram.ChatAction.TYPING)
+
 	#
 	# def startQueue(self):
 	#     t2 = threading.Thread(target=self.sendMessage)
