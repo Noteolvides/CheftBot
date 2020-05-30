@@ -16,6 +16,7 @@ from src.message_queue import QueueGestor
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
 from src.chatter import Chatter
 from src.chatter import Statement
+from src.test2 import getGif
 
 API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
 bot = telebot.TeleBot(API_TOKEN)
@@ -24,7 +25,7 @@ mongo = MongoDB()
 chatter = Chatter(
     [addIngredientNameManually, ingredientChosser, listIngredient, addIngredient,
      SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating,
-     StopOption, yesIngredient,noIngredient],
+     StopOption, yesIngredient, noIngredient],
     mongo)
 
 commands = {  # command description used in the "help" command
@@ -61,7 +62,7 @@ if __name__ == '__main__':
     @bot.message_handler(content_types=['text'])
     def generic_text(message):
         try:
-            s = Statement(message.text, message.chat.id,message)
+            s = Statement(message.text, message.chat.id, message)
             can_answer = chatter.checkIfMatch(statement=s)
             chatter.generateResponse(can_answer, s, bot)
         except:
@@ -94,9 +95,8 @@ if __name__ == '__main__':
             elif call.data == "yes_add_ingredient":
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 bot.send_message(call.message.chat.id, "Yeah,knew it, i am a hungry genius,:P")
-                bot.send_animation(call.message.chat.id,
-                                   "https://media1.tenor.com/images/335c59743ad925b364bc0615b681c0c0/tenor.gif")
                 posible_ingredient = mongo.get_possible_ingredient(call.message.chat.id)
+                bot.send_animation(call.message.chat.id, getGif(posible_ingredient["name"]))
                 if mongo.get_ingredient_by_name(call.message.chat.id, posible_ingredient["name"]) is None:
                     mongo.new_ingredient(call.message.chat.id, posible_ingredient)
                 else:
