@@ -7,6 +7,7 @@ from spacy.lang.en import English
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+from src.chatter import Statement
 from src.randomEmoji import random_emoji, UNICODE_VERSION
 
 api = sp.API("aa9cc6861144497a9ce2ab7ffa864984")
@@ -59,7 +60,11 @@ class listIngredient(object):
     @staticmethod
     def response(statement, bot, mongo):
         mongo.update_user_status(statement.id, 0)
-        ingredients = mongo.search_user_by_id(statement.id)["ingredients"]
+        ingredients = mongo.search_user_by_id(statement.id)
+        if ingredients is None:
+            bot.send_message(statement.id, "Seems like you dont have ingredients")
+            return
+        ingredients = ingredients["ingredients"]
         for ingredient in ingredients:
             if ingredient is not None:
                 markup = InlineKeyboardMarkup()
@@ -88,6 +93,57 @@ class addIngredient(object):
     @staticmethod
     def response(statement, bot, mongo):
         bot.send_message(statement.id, "You can take a picture, or add it manually.")
+        mongo.update_user_status(statement.id, 22)
+
+
+class yesIngredient(object):
+    def __init__(self, **kwargs):
+        pass
+
+    @staticmethod
+    def can_process(statement, state, mongo):
+        if (similar(statement.text, "yes") > 0.8 or "yes" in statement.text) and state == 23:
+            return True
+        return False
+
+    @staticmethod
+    def process(statement, state, mongo):
+        return similar(statement.text, "yes")
+
+    @staticmethod
+    def response(statement, bot, mongo):
+        bot.delete_message(statement.id, statement.message.message_id - 1)
+        bot.send_message(statement.id, "Yeah,knew it, i am a hungry genius,:P")
+        bot.send_animation(statement.id,
+                           "https://media1.tenor.com/images/335c59743ad925b364bc0615b681c0c0/tenor.gif")
+        posible_ingredient = mongo.get_possible_ingredient(statement.id)
+        if mongo.get_ingredient_by_name(statement.id, posible_ingredient["name"]) is None:
+            mongo.new_ingredient(statement.id, posible_ingredient)
+        else:
+            mongo.update_ingredient(statement.id, posible_ingredient)
+        mongo.update_user_status(statement.id, 0)
+
+
+class noIngredient(object):
+    def __init__(self, **kwargs):
+        pass
+
+    @staticmethod
+    def can_process(statement, state, mongo):
+        if (similar(statement.text, "no") > 0.8 or "no" in statement.text) and state == 23:
+            return True
+        return False
+
+    @staticmethod
+    def process(statement, state, mongo):
+        return similar(statement.text, "no")
+
+    @staticmethod
+    def response(statement, bot, mongo):
+        bot.delete_message(statement.id, statement.message.message_id - 1)
+        bot.delete_message(statement.id, statement.message.message_id - 2)
+        bot.send_message(statement.id, "Ouch,could you repeat again?")
+        addIngredient.response(Statement("", statement.id, None), bot, mongo)
         mongo.update_user_status(statement.id, 22)
 
 
@@ -124,7 +180,7 @@ class addIngredientNameManually(object):
                            InlineKeyboardButton("No", callback_data="no_add_ingredient"))
                 bot.send_message(statement.id, "Is this the item that you wanted to add?", reply_markup=markup)
                 mongo.possible_ingredient(statement.id, ingredient[0])
-                mongo.update_user_status(statement.id, 0)
+                mongo.update_user_status(statement.id, 23)
             else:
                 bot.send_message(statement.id, "This not seem like an ingredient")
                 bot.send_message(statement.id, "Could you repeat?")
