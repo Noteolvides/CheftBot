@@ -4,12 +4,9 @@ from difflib import SequenceMatcher
 import emoji
 import spoonacular as sp
 
-from chatterbot.conversation import Statement
-from chatterbot.logic import LogicAdapter
 from telebot import types
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from src.Model.Recipe import Recipe
-from src.message_queue import QueueGestor, DELAY_TYPE_TEXT, DELAY_TYPE_PHOTO
 from src.test import EsperaQueue
 from src.general_adapter import initial_menu
 
@@ -85,8 +82,11 @@ class SeeRecipes(object):
                                                     ranking=2).json()
 
         queue = EsperaQueue(burst_limit=1, time_limit_ms=100)
+        markup = InlineKeyboardMarkup()
+        markup.row_width = 1
+        markup.add(InlineKeyboardButton("Cook this recipie", callback_data="cook"))
         for recipe in recipes:
-            queue(bot.send_message, chat_id=statement.id, text=recipe["title"])
+            queue(bot.send_message, chat_id=statement.id, text=recipe["title"], reply_markup=markup)
             queue(bot.send_photo, chat_id=statement.id, photo=recipe["image"])
             mongo.new_choose_recipe(statement.id, recipe)
 
@@ -96,10 +96,6 @@ class SeeRecipes(object):
         queue(bot.send_message, chat_id=statement.id, text="Wich one do you like?")
         # bot.send_message(statement.id, "Wich one do you like?")
         # queue.add_message(statement.id, "Wich one do you like?", DELAY_TYPE_TEXT)
-
-        a = mongo.find({})
-        for doc in a:
-            print(doc)
 
         Aux.state = ESTADO_CHOOSING
         mongo.update_user_status(statement.id, ESTADO_CHOOSING)
@@ -139,7 +135,6 @@ class ChooseRecipe(object):
 
         selected_recipe = mongo.get_actual_recipe(statement.id)
         steps = api.get_analyzed_recipe_instructions(selected_recipe["id"], stepBreakdown=True).json()
-
         mongo.update_actual_steps(statement.id, steps)
         mongo.update_number_step(statement.id, -1)
 
@@ -225,7 +220,7 @@ class CookingRecipe(object):
                 recipe = mongo.get_actual_recipe(statement.id)
 
                 for recipe_ingredient in recipe["usedIngredients"]:
-                    #todo, parece que no me encuentra el ingrediente :(
+                    # todo, parece que no me encuentra el ingrediente :(
                     user_ingredient = mongo.get_ingredient_by_name(statement.id, recipe_ingredient["name"])
                     if user_ingredient is not None and user_ingredient["unit"] == recipe_ingredient["unit"] \
                             and user_ingredient["amount"] > recipe_ingredient["amount"]:

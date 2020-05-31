@@ -62,7 +62,6 @@ class listIngredient(object):
 
     @staticmethod
     def response(statement, bot, mongo):
-        mongo.update_user_status(statement.id, 0)
         ingredients = mongo.search_user_by_id(statement.id)
         if ingredients is None:
             bot.send_message(statement.id, "Seems like you dont have ingredients")

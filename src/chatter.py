@@ -1,7 +1,7 @@
 import emoji
 
 NOT_UNDERSTAND = "Sorry I didn\'t understand that :confused:"
-MINIMUM_CONFIDENCE = 0.2
+MINIMUM_CONFIDENCE = 0.5
 
 
 class Chatter(object):

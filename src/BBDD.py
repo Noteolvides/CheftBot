@@ -6,7 +6,7 @@ class MongoDB:
         self.client = MongoClient(port=27017)
         self.db = self.client["ChefBot"]
         self.collection = self.db["CB_User"]
-        # self.collection = self.db["CB_Recipies"] TODO: ver como tratar dos colecciones a la vez
+        self.collection_recipe = self.db["CB_Recipies"]
 
     # User querys______________________________
     # Con esta función se puedo conocer el usuario con detalle (estado, teclado, ingredientes, etc)
@@ -44,24 +44,14 @@ class MongoDB:
 
     # Pantry Querys_____________________________
     # TODO: comprobar antes si el ingrediente que se quiere añadir existe
-    def new_ingredient(self, user_id, ingredientInput):
+    def new_ingredient(self, id, ingredientInput):
         self.collection.find_one_and_update(
-            {"_id": user_id},
-            {"$push":
-                {
-                    "ingredients":
-                        {
-                            "ingredient_name": ingredientInput.ingredient,
-                            "quantity": ingredientInput.quantity,
-                        }
-                },
-            {"_id": user_id}:
+            {"_id": id},
             {
                 "$push":
                     {
                         "ingredients": ingredientInput
                     }
-            }
             }
         )
 
@@ -105,15 +95,13 @@ class MongoDB:
 
     # ShoppingList Querys_______________________
     def search_list(self, user_id):
-        self.collection = self.db["CB_SPList"]
-        return self.collection.find_one({"_id": user_id})
+        return self.collection_recipe.find_one({"_id": user_id})
 
     def add_item(self, user_id, item):
-        self.collection = self.db["CB_SPList"]
         shopping_list = self.search_list(user_id)
 
         if shopping_list is None:
-            self.collection.insert_one({"_id": user_id, "items": []})
+            self.collection_recipe.insert_one({"_id": user_id, "items": []})
         else:
             for e in shopping_list["items"]:
                 if e["item"] == item.name and e["unit"] == item.unit:
@@ -134,18 +122,16 @@ class MongoDB:
         )
 
     def delete_item_list(self, user_id, item):
-        self.collection = self.db["CB_SPList"]
-        self.collection.update_one(
+        self.collection_recipe.update_one(
             {"_id": user_id, "items.item": item.name, "items.unit": item.unit}, {"$unset": {"items.$": 1}}
         )
-        return self.collection.update({"_id": user_id}, {"$pull": {"items": None}})
+        return self.collection_recipe.update({"_id": user_id}, {"$pull": {"items": None}})
 
     # Recipies API______________________________
 
     def insert_new_recipie(self, recipie):
         # TODO: hace falta controlar que no repiten las recipies
-        self.collection = self.db["CB_Recipies"]
-        self.collection.insert({recipie})
+        self.collection_recipe.insert({recipie})
         pass
 
     def delete_item(self, user_id, item):

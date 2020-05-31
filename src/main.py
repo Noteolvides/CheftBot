@@ -1,3 +1,5 @@
+import re
+
 import telebot
 import emoji
 from telebot import types
@@ -109,6 +111,10 @@ if __name__ == '__main__':
                 mongo.delete_ingredient_by_name(call.message.chat.id, ingredient_de)
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 bot.send_message(call.message.chat.id, ingredient_de + " removed")
+            elif call.data == "cook":
+                s = Statement(call.message.text, call.message.chat.id, call.message)
+                can_answer = chatter.checkIfMatch(statement=s)
+                chatter.generateResponse(can_answer, s, bot)
         except:
             mongo.update_user_status(call.message.chat.id, 0)
             bot.send_message(call.message.chat.id, "Could you repeat")

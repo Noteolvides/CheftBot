@@ -36,7 +36,7 @@ class AddItem(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if state == ESTADO_ADD_ITEM and similar(statement.text, SP_ADD_ITEM) > MIN:
+        if similar(statement.text, SP_ADD_ITEM) > MIN:
             return True
         return False
 
@@ -64,7 +64,7 @@ class DeleteItem(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if state == ESTADO_DELETE_ITEM and similar(statement.text, SP_DELETE_ITEM) > MIN:
+        if similar(statement.text, SP_DELETE_ITEM) > MIN:
             return True
         return False
 
@@ -94,7 +94,7 @@ class ListItems(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if state == ESTADO_LIST_ITEMS and similar(statement.text, SP_LIST_ITEMS) > MIN:
+        if similar(statement.text, SP_LIST_ITEMS) > MIN:
             return True
         return False
 
