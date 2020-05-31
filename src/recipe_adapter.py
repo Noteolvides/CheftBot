@@ -31,15 +31,44 @@ RATE_MEAL = "How would you rate this meal?"
 
 NUMBER_RECIPES = 3
 
-api = sp.API("bba58a1c79234e139e3785c6fbceb313")
+api = sp.API("96597bf47b244aeaa828714933232af4")
 min = 0.7
 
 
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
+
 # Para ir a la opcion general de recetas, ver recetas posibles segun los ingredientes del user
 # Siempre disponible porque es una de las opciones importantes
+def newRecipies(statement, bot, mongo):
+    bot.send_message(statement.id, "Great")
+    bot.send_message(statement.id, POSSIBLE_RECIPIES)
+
+    ingredients_string = ""
+    ingredients = mongo.get_ingredients(statement.id)
+    for ingredient in ingredients:
+        ingredients_string += ingredient["name"]
+        ingredients_string += ","
+
+    a = ingredients_string[:-1]
+    recipes = api.search_recipes_by_ingredients(ingredients_string[:-1], fillIngredients=True,
+                                                number=NUMBER_RECIPES,
+                                                ranking=2).json()
+
+    queue = EsperaQueue(burst_limit=1, time_limit_ms=100)
+    markup = InlineKeyboardMarkup()
+    markup.row_width = 1
+    markup.add(InlineKeyboardButton("Cook this recipie", callback_data="cook"))
+    for recipe in recipes:
+        queue(bot.send_photo, chat_id=statement.id, photo=recipe["image"])
+        queue(bot.send_message, chat_id=statement.id, text=recipe["title"], reply_markup=markup)
+        mongo.new_choose_recipe(statement.id, recipe)
+
+    queue(bot.send_message, chat_id=statement.id, text="Which one do you want to cook?")
+    mongo.update_user_status(statement.id, ESTADO_CHOOSING)
+
+
 class SeeRecipes(object):
     def __init__(self, **kwargs):
         pass
@@ -54,39 +83,17 @@ class SeeRecipes(object):
 
     @staticmethod
     def response(statement, bot, mongo):
-        bot.send_message(statement.id, "Great")
-        bot.send_message(statement.id, POSSIBLE_RECIPIES)
+        cooking = mongo.get_cooking_recipe(statement.id)
+        if cooking:
+            recipe = mongo.get_actual_recipe(statement.id)
+            markup = InlineKeyboardMarkup()
+            markup.row_width = 1
+            markup.add(InlineKeyboardButton("Resume cooking", callback_data="resume_cooking"))
+            markup.add(InlineKeyboardButton("New recipie", callback_data="new_recipies"))
+            bot.send_message(statement.id, "Would you like to finish cooking " + recipe["title"] + "?", reply_markup=markup)
 
-        # TODO borrar el choose que hubiera antes
-
-        ingredients_string = ""
-        ingredients = mongo.get_ingredients(statement.id)
-        for ingredient in ingredients:
-            ingredients_string += ingredient["name"]
-            ingredients_string += ","
-
-        a = ingredients_string[:-1]
-        recipes = api.search_recipes_by_ingredients(ingredients_string[:-1], fillIngredients=True,
-                                                    number=NUMBER_RECIPES,
-                                                    ranking=2).json()
-
-        queue = EsperaQueue(burst_limit=1, time_limit_ms=100)
-        markup = InlineKeyboardMarkup()
-        markup.row_width = 1
-        markup.add(InlineKeyboardButton("Cook this recipie", callback_data="cook"))
-        for recipe in recipes:
-            queue(bot.send_message, chat_id=statement.id, text=recipe["title"], reply_markup=markup)
-            queue(bot.send_photo, chat_id=statement.id, photo=recipe["image"])
-            mongo.new_choose_recipe(statement.id, recipe)
-
-        # bot.send_message(statement.id, NONE_RECIPE)
-        # bot.send_message(statement.id, MORE_RECIPE)
-
-        queue(bot.send_message, chat_id=statement.id, text="Which one do you like?")
-        # bot.send_message(statement.id, "Wich one do you like?")
-        # queue.add_message(statement.id, "Wich one do you like?", DELAY_TYPE_TEXT)
-
-        mongo.update_user_status(statement.id, ESTADO_CHOOSING)
+        else:
+            newRecipies(statement, bot, mongo)
 
 
 # Escoger receta de las que ha devuelto la api
@@ -142,22 +149,16 @@ class ChooseRecipe(object):
 
         for ingredient in selected_recipe["missedIngredients"]:
             string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient["originalString"] + "\n"
+            mongo.add_missing_item(statement.id, ingredient)
 
-        bot.send_message(statement.id, string_ingredients)
+        if selected_recipe["missedIngredientCount"] == 0:
+            bot.send_message(statement.id, string_ingredients)
+        else:
+            markup = InlineKeyboardMarkup()
+            markup.row_width = 1
+            markup.add(InlineKeyboardButton("Add missing ingredients to shopping list", callback_data="add_missing_shopping"))
+            bot.send_message(statement.id, string_ingredients, reply_markup=markup)
 
-        #
-        # for process in steps:
-        #     for step in process["steps"]:
-        #         for equipment in step["equipment"]:
-        #             bot.send_message(statement.id, equipment["name"])
-
-        #
-        # for process in steps:
-        #     for step in process["steps"]:
-        #         for ingredient in step["ingredients"]:
-        #             bot.send_message(statement.id, ingredient["name"])
-
-        # Todo ¿Se puede poner negrita en los mensajes, para dar enfasis a la palabra exacta que tiene que escribir?
         bot.send_message(statement.id, START_COOKING)
         mongo.update_user_status(statement.id, ESTADO_COOKING)
 
@@ -189,27 +190,31 @@ class CookingRecipe(object):
     @staticmethod
     def response(statement, bot, mongo):
         if similar(statement.text.lower(), "no") < 0.7:
+            mongo.set_cooking_recipe(statement.id, True)
+
             paso_actual = mongo.get_number_step(statement.id)
             paso_actual = paso_actual + 1
             steps = mongo.get_actual_steps(statement.id)
 
-            if paso_actual == len(steps[0]["steps"]) - 1:
+            i = 0
+            paso_aux = paso_actual
+            while i < len(steps):
+                if paso_aux > len(steps[i]["steps"]):
+                    paso_aux -= len(steps[i]["steps"])
+                    i = i + 1
+                else:
+                    break
+
+            if paso_aux == len(steps[i]["steps"]) - 1:
                 bot.send_message(statement.id, "You are almost done!")
 
-            if paso_actual != len(steps[0]["steps"]):
+            if paso_aux != len(steps[i]["steps"]):
                 # gran variedad de nombres la verdad :(
                 # TODO Plantearse poner el calculo de step en una func porque se repite mucho
-                i = 0
-                paso_aux = paso_actual
-                while i < len(steps):
-                    if paso_aux >= len(steps[i]["steps"]):
-                        paso_aux -= len(steps[i]["steps"])
-                        i = i + 1
-                    else:
-                        break
+
                 markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
                 markup.add('prev', 'next')
-                bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+                bot.send_message(statement.id, str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
 
             else:
                 bot.send_message(statement.id,
@@ -228,7 +233,7 @@ class CookingRecipe(object):
 
                 for recipe_ingredient in recipe["usedIngredients"]:
                     for user_ingredient in user_ingredients:
-                        if similar(user_ingredient["name"], recipe_ingredient["name"]) > 0.7:
+                        if similar(user_ingredient["name"], recipe_ingredient["name"]) > 0.5:
                             if user_ingredient["unit"] == recipe_ingredient["unit"] \
                                     and user_ingredient["amount"] > recipe_ingredient["amount"]:
                                 user_ingredient["amount"] -= recipe_ingredient["amount"]
@@ -238,7 +243,10 @@ class CookingRecipe(object):
 
                             user_ingredients.remove(user_ingredient)
 
+                mongo.set_cooking_recipe(statement.id, False)
+
             mongo.update_number_step(statement.id, paso_actual)
+
         else:
             mongo.update_user_status(statement.id, ESTADO_MENU)
 
@@ -283,7 +291,7 @@ class NavigationReciepe(object):
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('prev', 'next')
             bot.send_message(statement.id, "This was the previous step")
-            bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+            bot.send_message(statement.id, str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
             mongo.update_number_step(statement.id, paso_actual)
 
         else:
@@ -298,7 +306,7 @@ class NavigationReciepe(object):
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('prev', 'next')
             bot.send_message(statement.id, "You are in the first step")
-            bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+            bot.send_message(statement.id, str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
 
 
 # Get todos los datos de la receta que se esta preparando, solo si se esta cocinando:
@@ -358,7 +366,6 @@ class MoreInfoRecipe(object):
                     "originalString"] + "\n"
 
         bot.send_message(statement.id, message)
-        bot.send_message(statement.id, "Your currently step is:")
         # Para recetas con varios procesos
         i = 0
         paso_aux = paso_actual
@@ -368,7 +375,7 @@ class MoreInfoRecipe(object):
                 i += 1
             else:
                 break
-        bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"])
+        bot.send_message(statement.id, "Your currently step is:\n" + str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"])
 
 
 # Para pedir al user que nos puntue la receta que acaba de preparar
