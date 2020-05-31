@@ -116,6 +116,9 @@ if __name__ == '__main__':
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 bot.send_message(call.message.chat.id, ingredient_de + " removed")
             elif call.data == "cook":
+                ChooseRecipe.process(Statement(call.message.text, call.message.chat.id, None), 0, mongo)
+                ChooseRecipe.response(Statement(call.message.text, call.message.chat.id, None), bot, mongo)
+
                 s = Statement(call.message.text, call.message.chat.id, call.message)
                 can_answer = chatter.checkIfMatch(statement=s)
                 chatter.generateResponse(can_answer, s, bot)
@@ -156,7 +159,11 @@ if __name__ == '__main__':
             text = emoji.emojize("Humm..., let me think :thinking_face:")
             bot.send_message(message.chat.id, text)
             ingredient = predict_photo(downloaded_file)
-            item = 'It might be an ' + ingredient
+            vowels = ('a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U')
+            if ingredient.startswith(vowels):
+                item = 'It might be an ' + ingredient
+            else:
+                item = 'It might be a ' + ingredient
             bot.reply_to(message, item)
             markup = InlineKeyboardMarkup()
             markup.row_width = 2
