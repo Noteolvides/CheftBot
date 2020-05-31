@@ -332,8 +332,8 @@ class MoreInfoRecipe(object):
         paso_actual = mongo.get_number_step(statement.id)
 
         message = ""
-        cnt = 0
         if opcion == see_steps:
+            cnt = 1
             bot.send_message(statement.id, ALL_STEPS)
             for process in steps:
                 for step in process["steps"]:
