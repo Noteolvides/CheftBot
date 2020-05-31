@@ -1,3 +1,4 @@
+import json
 from difflib import SequenceMatcher
 
 import emoji
@@ -7,6 +8,7 @@ from chatterbot.conversation import Statement
 from chatterbot.logic import LogicAdapter
 from telebot import types
 
+from src.Model.Recipe import Recipe
 from src.message_queue import QueueGestor, DELAY_TYPE_TEXT, DELAY_TYPE_PHOTO
 from src.test import EsperaQueue
 from src.general_adapter import initial_menu
@@ -30,7 +32,9 @@ ALL_COOKWARE = "Here are all te utensils/cookware you will need for your current
 ALL_INGREDIENTS = "Here are all the ingredients you will need for your current recipe"
 RATE_MEAL = "How would you rate this meal?"
 
-api = sp.API("aa9cc6861144497a9ce2ab7ffa864984")
+NUMBER_RECIPES = 3
+
+api = sp.API("bba58a1c79234e139e3785c6fbceb313")
 min = 0.7
 
 
@@ -67,25 +71,35 @@ class SeeRecipes(object):
         bot.send_message(statement.id, "Great")
         bot.send_message(statement.id, POSSIBLE_RECIPIES)
 
-        # TODO get INGREDIENTES de la BBDD para pasarle a la api
-        Aux.recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3,
-                                                        ranking=1).json()
-        # TODO guardar RECETAS POSIBLE de la api en BBDD
-        queue = EsperaQueue(burst_limit=1, time_limit_ms=1000)
-        for recipe in Aux.recipes:
+        # TODO borrar el choose que hubiera antes
+
+        ingredients_string = ""
+        ingredients = mongo.get_ingredients(statement.id)
+        for ingredient in ingredients:
+            ingredients_string += ingredient["name"]
+            ingredients_string += ","
+
+        a = ingredients_string[:-1]
+        recipes = api.search_recipes_by_ingredients(ingredients_string[:-1], fillIngredients=True,
+                                                    number=NUMBER_RECIPES,
+                                                    ranking=2).json()
+
+        queue = EsperaQueue(burst_limit=1, time_limit_ms=100)
+        for recipe in recipes:
             queue(bot.send_message, chat_id=statement.id, text=recipe["title"])
             queue(bot.send_photo, chat_id=statement.id, photo=recipe["image"])
-        # bot.send_message(statement.id, recipe["title"])
-        # bot.send_photo(statement.id, recipe["image"])
-
-        # queue.startQueue()
+            mongo.new_choose_recipe(statement.id, recipe)
 
         # bot.send_message(statement.id, NONE_RECIPE)
         # bot.send_message(statement.id, MORE_RECIPE)
 
+        queue(bot.send_message, chat_id=statement.id, text="Wich one do you like?")
         # bot.send_message(statement.id, "Wich one do you like?")
         # queue.add_message(statement.id, "Wich one do you like?", DELAY_TYPE_TEXT)
-        queue(bot.send_message, chat_id=statement.id, text="Which one do you like?")
+
+        a = mongo.find({})
+        for doc in a:
+            print(doc)
 
         Aux.state = ESTADO_CHOOSING
         mongo.update_user_status(statement.id, ESTADO_CHOOSING)
@@ -107,15 +121,14 @@ class ChooseRecipe(object):
     def process(statement, status, mongo):
         max = -1
 
-        # TODO get RECETAS POSIBLES del mongo
-        # recipes = api.search_recipes_by_ingredients("spaghetti, cheese, egg", fillIngredients=True, number=3, ranking=1).json()
-        for recipe in Aux.recipes:
-            actual = similar(statement.text.lower(), recipe["title"])
+        recipes = mongo.get_choose_recipes(statement.id)
+        for recipe in recipes:
+            actual = similar(statement.text.lower(), recipe["title"].lower())
             if actual > max:
                 max = actual
                 selected_recipe = recipe
 
-        # TODO guardar la SELECTED RECIPE en la BBDD
+        mongo.update_actual_recipe(statement.id, selected_recipe)
         return max
 
     @staticmethod
@@ -124,12 +137,14 @@ class ChooseRecipe(object):
         bot.send_message(statement.id, READY_RECIPE)
         bot.send_message(statement.id, COOKWARE_RECIPE)
 
-        # TODO get RECETA ACTUAL para tener el id
-        Aux.steps = api.get_analyzed_recipe_instructions(1115141, stepBreakdown=False).json()
-        # TODO guardar STEPS enla BBDD y el progresp, el step actual (el 0)
+        selected_recipe = mongo.get_actual_recipe(statement.id)
+        steps = api.get_analyzed_recipe_instructions(selected_recipe["id"], stepBreakdown=True).json()
+
+        mongo.update_actual_steps(statement.id, steps)
+        mongo.update_number_step(statement.id, -1)
 
         # TODO revisar/plantear otra manera de ver los pasos para que no sea tan tocho seguido
-        for process in Aux.steps:
+        for process in steps:
             for step in process["steps"]:
                 for equipment in step["equipment"]:
                     bot.send_message(statement.id, equipment["name"])
@@ -137,7 +152,7 @@ class ChooseRecipe(object):
         bot.send_message(statement.id, "Lets take a look to the ingredients")
         bot.send_message(statement.id, INGREDIENTS_RECIPE)
 
-        for process in Aux.steps:
+        for process in steps:
             for step in process["steps"]:
                 for ingredient in step["ingredients"]:
                     bot.send_message(statement.id, ingredient["name"])
@@ -175,24 +190,27 @@ class CookingRecipe(object):
     @staticmethod
     def response(statement, bot, mongo):
         if similar(statement.text.lower(), "no") < 0.7:
-            Aux.paso_actual = Aux.paso_actual + 1
+            paso_actual = mongo.get_number_step(statement.id)
+            paso_actual = paso_actual + 1
+            steps = mongo.get_actual_steps(statement.id)
 
-            if Aux.paso_actual == len(Aux.steps[0]["steps"]) - 1:
+            if paso_actual == len(steps[0]["steps"]) - 1:
                 bot.send_message(statement.id, "You are almost done!")
 
-            if Aux.paso_actual != len(Aux.steps[0]["steps"]):
+            if paso_actual != len(steps[0]["steps"]):
                 # gran variedad de nombres la verdad :(
+                # TODO Plantearse poner el calculo de step en una func porque se repite mucho
                 i = 0
-                paso_aux = Aux.paso_actual
-                while i < len(Aux.steps):
-                    if Aux.paso_actual >= len(Aux.steps[i]["steps"]):
-                        paso_aux -= len(Aux.steps[i]["steps"])
+                paso_aux = paso_actual
+                while i < len(steps):
+                    if paso_aux >= len(steps[i]["steps"]):
+                        paso_aux -= len(steps[i]["steps"])
                         i = i + 1
                     else:
                         break
                 markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
                 markup.add('prev', 'next')
-                bot.send_message(statement.id, Aux.steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+                bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
 
             else:
                 bot.send_message(statement.id,
@@ -203,9 +221,21 @@ class CookingRecipe(object):
 
                 Aux.state = ESTADO_RATING
                 mongo.update_user_status(statement.id, ESTADO_RATING)
+                mongo.delete_choose_recipes(statement.id)
+                recipe = mongo.get_actual_recipe(statement.id)
 
-            # Todo usar BBDD para los pasos
+                for recipe_ingredient in recipe["usedIngredients"]:
+                    #todo, parece que no me encuentra el ingrediente :(
+                    user_ingredient = mongo.get_ingredient_by_name(statement.id, recipe_ingredient["name"])
+                    if user_ingredient is not None and user_ingredient["unit"] == recipe_ingredient["unit"] \
+                            and user_ingredient["amount"] > recipe_ingredient["amount"]:
 
+                        user_ingredient["amount"] -= recipe_ingredient["amount"]
+                        mongo.update_ingredient(statement.id, user_ingredient)
+                    else:
+                        mongo.delete_ingredient_by_name(statement.id, recipe_ingredient["name"])
+
+            mongo.update_number_step(statement.id, paso_actual)
         else:
             Aux.state = ESTADO_MENU
             mongo.update_user_status(statement.id, ESTADO_MENU)
@@ -235,38 +265,40 @@ class NavigationReciepe(object):
 
     @staticmethod
     def response(statement, bot, mongo):
+        paso_actual = mongo.get_number_step(statement.id)
+        steps = mongo.get_actual_steps(statement.id)
 
-        if Aux.paso_actual > 0:
-            # Todo usar BBDD para get pasos, y get y set estado
-            Aux.paso_actual = Aux.paso_actual - 1
+        if paso_actual > 0:
+            paso_actual = paso_actual - 1
             i = 0
-            paso_aux = Aux.paso_actual
-            while i < len(Aux.steps):
-                if Aux.paso_actual >= len(Aux.steps[i]["steps"]):
-                    paso_aux -= len(Aux.steps[i]["steps"])
+            paso_aux = paso_actual
+            while i < len(steps):
+                if paso_aux >= len(steps[i]["steps"]):
+                    paso_aux -= len(steps[i]["steps"])
                     i = i + 1
                 else:
                     break
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('prev', 'next')
             bot.send_message(statement.id, "This was the previous step")
-            bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"], reply_markup=markup)
+            bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+            mongo.update_number_step(statement.id, paso_actual)
+
         else:
             i = 0
-            paso_aux = Aux.paso_actual
-            while i < len(Aux.steps):
-                if Aux.paso_actual >= len(Aux.steps[i]["steps"]):
-                    paso_aux -= len(Aux.steps[i]["steps"])
+            paso_aux = paso_actual
+            while i < len(steps):
+                if paso_aux >= len(steps[i]["steps"]):
+                    paso_aux -= len(steps[i]["steps"])
                     i = i + 1
                 else:
                     break
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('prev', 'next')
             bot.send_message(statement.id, "You are in the first step")
-            bot.send_message(statement.id, Aux.steps[0]["steps"][Aux.paso_actual]["step"], reply_markup=markup)
+            bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
 
 
-# TODO plantearse si separar en 3 casos distintos
 # Get todos los datos de la receta que se esta preparando, solo si se esta cocinando:
 # ver steps
 # ver utensilios
@@ -278,7 +310,6 @@ class MoreInfoRecipe(object):
 
     @staticmethod
     def can_process(statement, status, mongo):
-
         return status == ESTADO_COOKING
 
     @staticmethod
@@ -295,23 +326,25 @@ class MoreInfoRecipe(object):
         see_ingredients = similar(statement.text.lower(), "see ingredients")
         opcion = max(see_steps, see_cookware, see_ingredients)
 
-        # TODO pillar los analyzed_steps de la BBDD
+        steps = mongo.get_actual_steps(statement.id)
+        paso_actual = mongo.get_number_step(statement.id)
+
         if opcion == see_steps:
             bot.send_message(statement.id, ALL_STEPS)
-            for process in Aux.steps:
+            for process in steps:
                 for step in process["steps"]:
                     bot.send_message(statement.id, step["step"])
 
         if opcion == see_cookware:
             bot.send_message(statement.id, ALL_COOKWARE)
-            for process in Aux.steps:
+            for process in steps:
                 for step in process["steps"]:
                     for equipment in step["equipment"]:
                         bot.send_message(statement.id, equipment["name"])
 
         if opcion == see_ingredients:
             bot.send_message(statement.id, ALL_INGREDIENTS)
-            for process in Aux.steps:
+            for process in steps:
                 for step in process["steps"]:
                     for ingredient in step["ingredients"]:
                         bot.send_message(statement.id, ingredient["name"])
@@ -319,10 +352,11 @@ class MoreInfoRecipe(object):
         bot.send_message(statement.id, "Your currently step is:")
         # Para recetas con varios procesos
         i = 0
-        paso_aux = Aux.paso_actual
-        while i < len(Aux.steps):
-            if Aux.paso_actual >= len(Aux.steps[i]["steps"]):
-                paso_aux -= len(Aux.steps[i]["steps"])
+        paso_aux = paso_actual
+        while i < len(steps):
+            if paso_aux >= len(steps[i]["steps"]):
+                paso_aux -= len(steps[i]["steps"])
+                i += 1
             else:
                 break
         bot.send_message(statement.id, Aux.steps[i]["steps"][paso_aux]["step"])
@@ -348,9 +382,8 @@ class MealRating(object):
     def response(statement, bot, mongo):
         bot.send_message(statement.id, "Thanks for your review, I'll keep it in my HDD for your next meals! :)")
         # TODO (OPCIONAL) guardar valoraciones de receta para recomendaciones
-        # TODO actualizar status en BBDD
-        # TODO llamar a funcion de inicio
         initial_menu(statement.id, bot)
 
+        # TODO restar cantidadaes de los ingredientes
         Aux.state = ESTADO_MENU
         mongo.update_user_status(statement.id, ESTADO_MENU)

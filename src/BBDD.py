@@ -44,9 +44,6 @@ class MongoDB:
 
     # Pantry Querys_____________________________
     # TODO: comprobar antes si el ingrediente que se quiere añadir existe
-    def new_ingredient(self, user_id, ingredient):
-        # TODO: Falta imagen
-
     def new_ingredient(self, user_id, ingredientInput):
         self.collection.find_one_and_update(
             {"_id": user_id},
@@ -57,18 +54,21 @@ class MongoDB:
                             "ingredient_name": ingredientInput.ingredient,
                             "quantity": ingredientInput.quantity,
                         }
-                }
-            {"_id": id},
+                },
+            {"_id": user_id}:
             {
                 "$push":
                     {
                         "ingredients": ingredientInput
                     }
             }
+            }
         )
 
     def search_ingredient(self, user, ingredient):
-    # fixme: no encuetra nah de nah
+        # fixme: no encuetra nah de nah
+        print("jajas")
+
     def get_ingredients(self, id):
         user = self.search_user_by_id(id)
         return user["ingredients"]
@@ -76,23 +76,27 @@ class MongoDB:
     def get_ingredient_by_name(self, user_id, name):
         return self.collection.find_one(
             {"_id": user_id, "ingredients": [{"ingredient_name": name}]}
-
-            {"_id": id, "ingredients.name": name}
-
         )
 
-    def update_ingredient(self, user, ingredient):
-        self.collection.update(
-            {"_id": user.token, "ingredient": ingredient.ingredient},
-            {"$set":
-                {
-                    "_id": user.token,  # Codigo id único en mongo db
-                    "ingredients": {
-                        "ingredient_name": [ingredient.ingredient],
-                        "quantity": ingredient.quantity
-                    }
-                }
-            }
+    def get_ingredient_by_id(self, id, ingredient_id):
+        return self.collection.find_one(
+            {"_id": id, "ingredients": [{"id": ingredient_id}]}
+        )
+
+    # def update_ingredient(self, user, ingredient):
+    #     self.collection.update(
+    #         {"_id": user.token, "ingredient": ingredient.ingredient},
+    #         {"$set":
+    #             {
+    #                 "_id": user.token,  # Codigo id único en mongo db
+    #                 "ingredients": {
+    #                     "ingredient_name": [ingredient.ingredient],
+    #                     "quantity": ingredient.quantity
+    #                 }
+    #             }
+    #         }
+    #     )
+
     def update_ingredient(self, id, ingredient):
         return self.collection.update(
             {"_id": id, "ingredients.name": ingredient["name"]},
@@ -146,6 +150,69 @@ class MongoDB:
 
     def delete_item(self, user_id, item):
         pass
+
     def delete_ingredient_by_name(self, id, nameIngredient):
         self.collection.update_one({"_id": id, "ingredients.name": nameIngredient}, {"$unset": {"ingredients.$": 1}})
         why = self.collection.update({"_id": id}, {"$pull": {"ingredients": None}})
+
+    # ShoppingList Querys_______________________
+
+    # Recipies API______________________________
+
+    def update_actual_recipe(self, token, recipe):
+        self.collection.find_one_and_update(
+            {"_id": token},
+            {"$set": {"actual_recipe": recipe}}
+        )
+
+    def get_actual_recipe(self, id):
+        user = self.search_user_by_id(id)
+        return user["actual_recipe"]
+
+    def update_actual_steps(self, token, steps):
+        self.collection.find_one_and_update(
+            {"_id": token},
+            {"$set": {"actual_steps": steps}}
+        )
+
+    def get_actual_steps(self, id):
+        user = self.search_user_by_id(id)
+        return user["actual_steps"]
+
+    def update_number_step(self, id, number_step):
+        self.collection.find_one_and_update(
+            {"_id": id},
+            {"$set": {"number_step": number_step}}
+        )
+
+    def get_number_step(self, id):
+        user = self.search_user_by_id(id)
+        return user["number_step"]
+
+    def push_choose_recipe(self, token, recipe):
+        self.collection.find_one_and_update(
+            {"_id": token},
+            {"$push": {"choose_recipes": {"$each": [
+                {"recipe_id": recipe.recipe_id,
+                 "title": recipe.title,
+                 "img": recipe.img}
+            ]}}}, upsert=True
+        )
+
+    def new_choose_recipe(self, token, recipe):
+        self.collection.find_one_and_update(
+            {"_id": token},
+            {"$push": {"choose_recipes": recipe}
+             }
+        )
+
+    def delete_choose_recipes(self, id):
+        self.collection.update_one({"_id": id}, {"$unset": {"choose_recipes": 1}})
+        why = self.collection.update({"_id": id}, {"$pull": {"choose_recipes": None}})
+
+    def get_choose_recipes(self, id):
+        user = self.search_user_by_id(id)
+        return user["choose_recipes"]
+
+    def find(self, param):
+        return self.collection.find({})

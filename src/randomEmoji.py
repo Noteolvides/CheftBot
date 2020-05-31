@@ -66,7 +66,7 @@ def random_emoji(unicode_version=6):
 
     # Calculate the index in the selected range
     point_in_range = point
-    if emoji_range_idx is not 0:
+    if emoji_range_idx != 0:
         point_in_range = point - weight_distr[emoji_range_idx - 1]
 
     # Emoji 😄

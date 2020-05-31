@@ -37,7 +37,7 @@ class Chatter(object):
 
 
 class Statement(object):
-    def __init__(self, statement, id,message):
+    def __init__(self, statement, id, message):
         self.text = statement
         self.id = id
         self.message = message
