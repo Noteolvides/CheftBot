@@ -19,12 +19,13 @@ from src.chatter import Statement
 from src.test2 import getGif
 from src.shoppingList import DeleteItem, AddItem, ListItems
 
-API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
+API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
 chatter = Chatter(
-    [addIngredientNameManually, ingredientChosser,listIngredient, addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe,
+    [addIngredientNameManually, ingredientChosser, listIngredient, addIngredient, SeeRecipes, ChooseRecipe,
+     MoreInfoRecipe,
      CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating, AddItem, DeleteItem, ListItems], mongo)
 
 commands = {  # command description used in the "help" command
@@ -112,9 +113,9 @@ if __name__ == '__main__':
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 bot.send_message(call.message.chat.id, ingredient_de + " removed")
             elif call.data == "cook":
-                s = Statement(call.message.text, call.message.chat.id, call.message)
-                can_answer = chatter.checkIfMatch(statement=s)
-                chatter.generateResponse(can_answer, s, bot)
+                ChooseRecipe.process(Statement(call.message.text, call.message.chat.id, None), 0, mongo)
+                ChooseRecipe.response(Statement(call.message.text, call.message.chat.id, None), bot, mongo)
+
         except:
             mongo.update_user_status(call.message.chat.id, 0)
             bot.send_message(call.message.chat.id, "Could you repeat")
@@ -132,7 +133,11 @@ if __name__ == '__main__':
             text = emoji.emojize("Humm..., let me think :thinking_face:")
             bot.send_message(message.chat.id, text)
             ingredient = predict_photo(downloaded_file)
-            item = 'It might be an ' + ingredient
+            vowels = ('a', 'e', 'i', 'o', 'u', 'A', 'E', 'I', 'O', 'U')
+            if ingredient.startswith(vowels):
+                item = 'It might be an ' + ingredient
+            else:
+                item = 'It might be a ' + ingredient
             bot.reply_to(message, item)
             markup = InlineKeyboardMarkup()
             markup.row_width = 2

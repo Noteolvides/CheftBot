@@ -93,7 +93,7 @@ class SeeRecipes(object):
         # bot.send_message(statement.id, NONE_RECIPE)
         # bot.send_message(statement.id, MORE_RECIPE)
 
-        queue(bot.send_message, chat_id=statement.id, text="Wich one do you like?")
+        queue(bot.send_message, chat_id=statement.id, text="Which one do you like?")
         # bot.send_message(statement.id, "Wich one do you like?")
         # queue.add_message(statement.id, "Wich one do you like?", DELAY_TYPE_TEXT)
 
@@ -224,7 +224,6 @@ class CookingRecipe(object):
                     user_ingredient = mongo.get_ingredient_by_name(statement.id, recipe_ingredient["name"])
                     if user_ingredient is not None and user_ingredient["unit"] == recipe_ingredient["unit"] \
                             and user_ingredient["amount"] > recipe_ingredient["amount"]:
-
                         user_ingredient["amount"] -= recipe_ingredient["amount"]
                         mongo.update_ingredient(statement.id, user_ingredient)
                     else:
