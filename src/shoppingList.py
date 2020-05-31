@@ -34,7 +34,7 @@ SP_MARK_ITEM = "Mark Item As Done"
 SP_LIST_ITEMS = "List Items"
 
 MIN = 0.8
-api = sp.API("aa9cc6861144497a9ce2ab7ffa864984")
+api = sp.API("96597bf47b244aeaa828714933232af4")
 aux_status = 0
 
 
@@ -44,13 +44,14 @@ class ShoppingListChooser(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if similar(statement.text, SP) > MIN:
-            return True
-        return False
+        # if similar(statement.text, SP) > MIN:
+        #     return True
+        # return False
+        return True
 
     @staticmethod
     def process(statement, state, mongo):
-        return similar(statement.text, SP)
+        return max(similar(statement.text.lower(), SP), similar(statement.text.lower(), "shopping"))
 
     @staticmethod
     def response(statement, bot, mongo):

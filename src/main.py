@@ -11,14 +11,15 @@ from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredientNameManually, listIngredient, \
     yesIngredient, noIngredient, removeIngredient
 from src.message_queue import QueueGestor
-from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating
+from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating, \
+    newRecipies
 from src.chatter import Chatter
 from src.chatter import Statement
 from src.test2 import getGif
 from src.shoppingList import ListItems, ShoppingListChooser, DeleteItem, AddItem, SPAddingItem, SPDeletingItem, \
     DeleteList, SPYes, SPNo, MarkItem, SPMarkItemDone
 
-API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
+API_TOKEN = '1155345080:AAEh_VkMdKCdDR0jQDb6_O2uDbo8Za6bQzA' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
@@ -43,6 +44,7 @@ if __name__ == '__main__':
         mongo.new_user(User(message.chat.id, "", 0, ""))
         mongo.update_user_status(message.chat.id, 0)
         chat_id = message.chat.id
+        mongo.set_cooking_recipe(chat_id, False)
         bot.send_message(chat_id,
                          "<b>Welcome to chefbot</b>\nIn this chatbot you can find a set of tools to develop your culinary abilities\n<i>Shopping list : You can add the missing products.</i>\n<i>Ingredients : You can add the products that you already have.</i>\n<i>Recepies : You can choose a lot of recipies to make :).</i>\n<u>Come on, what are you waiting for</u>",
                          parse_mode="HTML")
@@ -118,10 +120,11 @@ if __name__ == '__main__':
             elif call.data == "cook":
                 ChooseRecipe.process(Statement(call.message.text, call.message.chat.id, None), 0, mongo)
                 ChooseRecipe.response(Statement(call.message.text, call.message.chat.id, None), bot, mongo)
-
-                s = Statement(call.message.text, call.message.chat.id, call.message)
-                can_answer = chatter.checkIfMatch(statement=s)
-                chatter.generateResponse(can_answer, s, bot)
+            elif call.data == "add_missing_shopping":
+                missing_ingredients = mongo.get_missing_ingredients(call.message.chat.id)
+                for missing_ingredient in missing_ingredients:
+                    mongo.add_missing_item(call.message.chat.id, missing_ingredient)
+                mongo.delete_missing_ingredients(call.message.chat.id)
             elif call.data == "add_item":
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 AddItem.response(Statement("", call.message.chat.id, None), bot, mongo)
@@ -141,7 +144,13 @@ if __name__ == '__main__':
                 SPYes.response(Statement("", call.message.chat.id, None), bot, mongo)
             elif call.data == "no_sp":
                 SPNo.response(Statement("", call.message.chat.id, None), bot, mongo)
-
+            elif call.data == "new_recipies":
+                newRecipies(Statement("", call.message.chat.id, None), bot, mongo)
+            elif call.data == "resume_cooking":
+                paso_actual = mongo.get_number_step(call.message.chat.id)
+                paso_actual -= 1
+                mongo.update_number_step(call.message.chat.id, paso_actual)
+                CookingRecipe.response(Statement("", call.message.chat.id, None), bot, mongo)
         except:
             mongo.update_user_status(call.message.chat.id, 0)
             bot.send_message(call.message.chat.id, "Could you repeat")

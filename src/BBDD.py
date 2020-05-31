@@ -102,6 +102,20 @@ class MongoDB:
     def search_list(self, user_id):
         return self.collection_shopping_list.find_one({"_id": user_id})
 
+    def add_missing_item(self, user_id, item):
+        self.collection_shopping_list.find_one_and_update(
+            {"_id": user_id},
+            {"$push":
+                {"items": {
+                    "item": item["name"],
+                    "quantity": item["amount"],
+                    "unit": item["unit"],
+                    "done": False
+                }
+                }
+            }, upsert=True
+        )
+
     def add_item(self, user_id, item):
         shopping_list = self.search_list(user_id)
 
@@ -220,6 +234,24 @@ class MongoDB:
             {"$push": {"choose_recipes": recipe}
              }
         )
+
+    def set_cooking_recipe(self, id_user, state):
+        self.collection.find_one_and_update(
+            {"_id": id_user},
+            {"$set": {"cooking": state}}, upsert=True
+        )
+
+    def get_cooking_recipe(self, user_id):
+        user = self.search_user_by_id(user_id)
+        return user["cooking"]
+
+    def get_missing_ingredients(self, user_id):
+        user = self.search_user_by_id(user_id)
+        return user["missing_ingredients"]
+
+    def delete_missing_ingredients(self, id):
+        self.collection.update_one({"_id": id}, {"$unset": {"missing_ingredients": 1}})
+        why = self.collection.update({"_id": id}, {"$pull": {"missing_ingredients": None}})
 
     def delete_choose_recipes(self, id):
         self.collection.update_one({"_id": id}, {"$unset": {"choose_recipes": 1}})

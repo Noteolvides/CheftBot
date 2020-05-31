@@ -11,8 +11,8 @@ from src.chatter import Statement
 from src.randomEmoji import random_emoji, UNICODE_VERSION
 
 listOfKeys = ["aa9cc6861144497a9ce2ab7ffa864984", "8f73d348bf9d4f01b24731f418c9f6b2",
-              "bba58a1c79234e139e3785c6fbceb313"]
-api = sp.API("bba58a1c79234e139e3785c6fbceb313")
+              "bba58a1c79234e139e3785c6fbceb313", "96597bf47b244aeaa828714933232af4"]
+api = sp.API("96597bf47b244aeaa828714933232af4")
 
 
 def similar(a, b):
