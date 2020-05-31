@@ -1,5 +1,3 @@
-import re
-
 import telebot
 import emoji
 from telebot import types
@@ -17,21 +15,27 @@ from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, More
 from src.chatter import Chatter
 from src.chatter import Statement
 from src.test2 import getGif
-from src.shoppingList import DeleteItem, AddItem, ListItems
+from src.shoppingList import ListItems, ShoppingListChooser, DeleteItem, AddItem, SPAddingItem, SPDeletingItem, \
+    DeleteList, SPYes, SPNo, MarkItem, SPMarkItemDone
 
 API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
 chatter = Chatter(
-    [addIngredientNameManually, ingredientChosser,listIngredient, addIngredient, SeeRecipes, ChooseRecipe, MoreInfoRecipe,
-     CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating, AddItem, DeleteItem, ListItems], mongo)
+    [
+        addIngredientNameManually, ingredientChosser, listIngredient, addIngredient,
+        SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating,
+        ShoppingListChooser, AddItem, DeleteItem, DeleteList, MarkItem, ListItems, SPAddingItem, SPDeletingItem, SPMarkItemDone
+    ],
+    mongo)
 
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
 }
 message_queue = QueueGestor(bot)
 # message_queue.startQueue()
+
 
 if __name__ == '__main__':
     @bot.message_handler(commands=['start'])
@@ -105,7 +109,7 @@ if __name__ == '__main__':
             elif call.data == "remove_ingredient":
                 regex = r"(?<=Ingredient : )(.*)(?=Quantity : )"
                 test_str = call.message.text.replace('\n', '')
-                matches = re.search(regex, test_str, re.MULTILINE)
+                matches = regex.search(regex, test_str, regex.MULTILINE)
                 ingredient_en = matches.group().encode("ascii", "ignore")
                 ingredient_de = ingredient_en.decode()
                 mongo.delete_ingredient_by_name(call.message.chat.id, ingredient_de)
@@ -115,6 +119,26 @@ if __name__ == '__main__':
                 s = Statement(call.message.text, call.message.chat.id, call.message)
                 can_answer = chatter.checkIfMatch(statement=s)
                 chatter.generateResponse(can_answer, s, bot)
+            elif call.data == "add_item":
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+                AddItem.response(Statement("", call.message.chat.id, None), bot, mongo)
+            elif call.data == "delete_item":
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+                DeleteItem.response(Statement("", call.message.chat.id, None), bot, mongo)
+            elif call.data == "delete_list":
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+                DeleteList.response(Statement("", call.message.chat.id, None), bot, mongo)
+            elif call.data == "mark_item":
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+                MarkItem.response(Statement("", call.message.chat.id, None), bot, mongo)
+            elif call.data == "list_items":
+                bot.delete_message(call.message.chat.id, call.message.message_id)
+                ListItems.response(Statement("", call.message.chat.id, None), bot, mongo)
+            elif call.data == "yes_sp":
+                SPYes.response(Statement("", call.message.chat.id, None), bot, mongo)
+            elif call.data == "no_sp":
+                SPNo.response(Statement("", call.message.chat.id, None), bot, mongo)
+
         except:
             mongo.update_user_status(call.message.chat.id, 0)
             bot.send_message(call.message.chat.id, "Could you repeat")

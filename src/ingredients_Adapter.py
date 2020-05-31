@@ -36,7 +36,6 @@ class ingredientChosser(object):
     @staticmethod
     def response(statement, bot, mongo):
         # change state of user
-
         markup = InlineKeyboardMarkup()
         markup.row_width = 2
         markup.add(InlineKeyboardButton("Add ingredient", callback_data="add_ingredients"),
