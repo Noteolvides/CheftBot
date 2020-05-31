@@ -38,14 +38,6 @@ min = 0.7
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
-
-class Aux(object):
-    state = ESTADO_MENU
-    recipes = None
-    steps = None
-    paso_actual = -1
-
-
 # Para ir a la opcion general de recetas, ver recetas posibles segun los ingredientes del user
 # Siempre disponible porque es una de las opciones importantes
 class SeeRecipes(object):
@@ -54,9 +46,6 @@ class SeeRecipes(object):
 
     @staticmethod
     def can_process(statement, status, mongo):
-        # lower_string = statement.text
-        # if "recipe" in lower_string.lower():  # Aux.state == ESTADO_MENU:
-        #     return True
         return True
 
     @staticmethod
@@ -97,7 +86,6 @@ class SeeRecipes(object):
         # bot.send_message(statement.id, "Wich one do you like?")
         # queue.add_message(statement.id, "Wich one do you like?", DELAY_TYPE_TEXT)
 
-        Aux.state = ESTADO_CHOOSING
         mongo.update_user_status(statement.id, ESTADO_CHOOSING)
 
 
@@ -130,31 +118,47 @@ class ChooseRecipe(object):
     @staticmethod
     def response(statement, bot, mongo):
         bot.send_message(statement.id, EXCELENT_CHOICE)
-        bot.send_message(statement.id, READY_RECIPE)
-        bot.send_message(statement.id, COOKWARE_RECIPE)
+        # bot.send_message(statement.id, READY_RECIPE)
 
         selected_recipe = mongo.get_actual_recipe(statement.id)
         steps = api.get_analyzed_recipe_instructions(selected_recipe["id"], stepBreakdown=True).json()
         mongo.update_actual_steps(statement.id, steps)
         mongo.update_number_step(statement.id, -1)
 
-        # TODO revisar/plantear otra manera de ver los pasos para que no sea tan tocho seguido
-        for process in steps:
-            for step in process["steps"]:
-                for equipment in step["equipment"]:
-                    bot.send_message(statement.id, equipment["name"])
+        if len(steps) == 0:
+            bot.send_message(statement.id, emoji.emojize("Sorry this recipe is not available :cry:", use_aliases=True))
+            bot.send_message(statement.id, emoji.emojize("Uno de nuestros chefs ha puesto un platano en el lector de CDs :monkey:", use_aliases=True))
+            initial_menu(statement.id, bot)
+            mongo.update_user_status(statement.id, ESTADO_MENU)
+            return None
 
-        bot.send_message(statement.id, "Lets take a look to the ingredients")
+        # TODO revisar/plantear otra manera de ver los pasos para que no sea tan tocho seguido
+        # bot.send_message(statement.id, "Lets take a look to the ingredients")
         bot.send_message(statement.id, INGREDIENTS_RECIPE)
 
-        for process in steps:
-            for step in process["steps"]:
-                for ingredient in step["ingredients"]:
-                    bot.send_message(statement.id, ingredient["name"])
+        string_ingredients = ""
+        for ingredient in selected_recipe["usedIngredients"]:
+            string_ingredients += emoji.emojize(":white_check_mark: ", use_aliases=True) + ingredient["originalString"] + "\n"
+
+        for ingredient in selected_recipe["missedIngredients"]:
+            string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient["originalString"] + "\n"
+
+        bot.send_message(statement.id, string_ingredients)
+
+        #
+        # for process in steps:
+        #     for step in process["steps"]:
+        #         for equipment in step["equipment"]:
+        #             bot.send_message(statement.id, equipment["name"])
+
+        #
+        # for process in steps:
+        #     for step in process["steps"]:
+        #         for ingredient in step["ingredients"]:
+        #             bot.send_message(statement.id, ingredient["name"])
 
         # Todo ¿Se puede poner negrita en los mensajes, para dar enfasis a la palabra exacta que tiene que escribir?
         bot.send_message(statement.id, START_COOKING)
-        Aux.state = ESTADO_COOKING
         mongo.update_user_status(statement.id, ESTADO_COOKING)
 
 
@@ -212,26 +216,30 @@ class CookingRecipe(object):
                                  emoji.emojize("Congratulations you have finished the recipe :clap:", use_aliases=True))
                 # todo sad porque no he encontrado chef https://www.webfx.com/tools/emoji-cheat-sheet/
                 bot.send_message(statement.id, emoji.emojize("Bon apettite :ok_hand:", use_aliases=True))
+                bot.send_animation(statement.id,
+                                   "https://tenor.com/view/delicious-gif-7851132")
                 bot.send_message(statement.id, RATE_MEAL)
 
-                Aux.state = ESTADO_RATING
                 mongo.update_user_status(statement.id, ESTADO_RATING)
                 mongo.delete_choose_recipes(statement.id)
                 recipe = mongo.get_actual_recipe(statement.id)
 
+                user_ingredients = mongo.get_ingredients(statement.id)
+
                 for recipe_ingredient in recipe["usedIngredients"]:
-                    # todo, parece que no me encuentra el ingrediente :(
-                    user_ingredient = mongo.get_ingredient_by_name(statement.id, recipe_ingredient["name"])
-                    if user_ingredient is not None and user_ingredient["unit"] == recipe_ingredient["unit"] \
-                            and user_ingredient["amount"] > recipe_ingredient["amount"]:
-                        user_ingredient["amount"] -= recipe_ingredient["amount"]
-                        mongo.update_ingredient(statement.id, user_ingredient)
-                    else:
-                        mongo.delete_ingredient_by_name(statement.id, recipe_ingredient["name"])
+                    for user_ingredient in user_ingredients:
+                        if similar(user_ingredient["name"], recipe_ingredient["name"]) > 0.7:
+                            if user_ingredient["unit"] == recipe_ingredient["unit"] \
+                                    and user_ingredient["amount"] > recipe_ingredient["amount"]:
+                                user_ingredient["amount"] -= recipe_ingredient["amount"]
+                                mongo.update_ingredient(statement.id, user_ingredient)
+                            else:
+                                mongo.delete_ingredient_by_name(statement.id, recipe_ingredient["name"])
+
+                            user_ingredients.remove(user_ingredient)
 
             mongo.update_number_step(statement.id, paso_actual)
         else:
-            Aux.state = ESTADO_MENU
             mongo.update_user_status(statement.id, ESTADO_MENU)
 
             bot.send_message(statement.id, "You stopped cooking the recipe")
@@ -323,26 +331,33 @@ class MoreInfoRecipe(object):
         steps = mongo.get_actual_steps(statement.id)
         paso_actual = mongo.get_number_step(statement.id)
 
+        message = ""
+        cnt = 0
         if opcion == see_steps:
             bot.send_message(statement.id, ALL_STEPS)
             for process in steps:
                 for step in process["steps"]:
-                    bot.send_message(statement.id, step["step"])
+                    message += str(cnt) + ". " + step["step"] + "\n"
+                    cnt += 1
 
         if opcion == see_cookware:
             bot.send_message(statement.id, ALL_COOKWARE)
             for process in steps:
                 for step in process["steps"]:
                     for equipment in step["equipment"]:
-                        bot.send_message(statement.id, equipment["name"])
+                        message += equipment["name"] + "\n"
 
         if opcion == see_ingredients:
-            bot.send_message(statement.id, ALL_INGREDIENTS)
-            for process in steps:
-                for step in process["steps"]:
-                    for ingredient in step["ingredients"]:
-                        bot.send_message(statement.id, ingredient["name"])
+            selected_recipe = mongo.get_actual_recipe(statement.id)
+            for ingredient in selected_recipe["usedIngredients"]:
+                message += emoji.emojize(":white_check_mark: ", use_aliases=True) + ingredient[
+                    "originalString"] + "\n"
 
+            for ingredient in selected_recipe["missedIngredients"]:
+                message += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient[
+                    "originalString"] + "\n"
+
+        bot.send_message(statement.id, message)
         bot.send_message(statement.id, "Your currently step is:")
         # Para recetas con varios procesos
         i = 0
@@ -353,7 +368,7 @@ class MoreInfoRecipe(object):
                 i += 1
             else:
                 break
-        bot.send_message(statement.id, Aux.steps[i]["steps"][paso_aux]["step"])
+        bot.send_message(statement.id, steps[i]["steps"][paso_aux]["step"])
 
 
 # Para pedir al user que nos puntue la receta que acaba de preparar
@@ -379,5 +394,4 @@ class MealRating(object):
         initial_menu(statement.id, bot)
 
         # TODO restar cantidadaes de los ingredientes
-        Aux.state = ESTADO_MENU
         mongo.update_user_status(statement.id, ESTADO_MENU)
