@@ -12,7 +12,7 @@ from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredi
     yesIngredient, noIngredient, removeIngredient
 from src.message_queue import QueueGestor
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating, \
-    newRecipies
+    newRecipies, ESTADO_COOKING
 from src.chatter import Chatter
 from src.chatter import Statement
 from src.test2 import getGif
@@ -150,6 +150,7 @@ if __name__ == '__main__':
                 paso_actual = mongo.get_number_step(call.message.chat.id)
                 paso_actual -= 1
                 mongo.update_number_step(call.message.chat.id, paso_actual)
+                mongo.update_user_status(call.message.chat.id, ESTADO_COOKING)
                 CookingRecipe.response(Statement("", call.message.chat.id, None), bot, mongo)
         except:
             mongo.update_user_status(call.message.chat.id, 0)

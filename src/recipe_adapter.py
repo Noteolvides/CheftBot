@@ -44,6 +44,7 @@ def similar(a, b):
 def newRecipies(statement, bot, mongo):
     bot.send_message(statement.id, "Great")
     bot.send_message(statement.id, POSSIBLE_RECIPIES)
+    mongo.set_cooking_recipe(statement.id, False)
 
     ingredients_string = ""
     ingredients = mongo.get_ingredients(statement.id)
@@ -149,7 +150,7 @@ class ChooseRecipe(object):
 
         for ingredient in selected_recipe["missedIngredients"]:
             string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient["originalString"] + "\n"
-            mongo.add_missing_item(statement.id, ingredient)
+            mongo.add_missing_ingredient(statement.id, ingredient)
 
         if selected_recipe["missedIngredientCount"] == 0:
             bot.send_message(statement.id, string_ingredients)

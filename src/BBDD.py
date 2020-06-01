@@ -209,16 +209,6 @@ class MongoDB:
         user = self.search_user_by_id(id)
         return user["number_step"]
 
-    def push_choose_recipe(self, token, recipe):
-        self.collection.find_one_and_update(
-            {"_id": token},
-            {"$push": {"choose_recipes": {"$each": [
-                {"recipe_id": recipe.recipe_id,
-                 "title": recipe.title,
-                 "img": recipe.img}
-            ]}}}, upsert=True
-        )
-
     def new_choose_recipe(self, token, recipe):
         self.collection.find_one_and_update(
             {"_id": token},
@@ -235,6 +225,13 @@ class MongoDB:
     def get_cooking_recipe(self, user_id):
         user = self.search_user_by_id(user_id)
         return user["cooking"]
+
+    def add_missing_ingredient(self, user_id, missing_ingredient):
+        self.collection.find_one_and_update(
+            {"_id": user_id},
+            {"$push": {"missing_ingredients": missing_ingredient}}
+            , upsert=True
+        )
 
     def get_missing_ingredients(self, user_id):
         user = self.search_user_by_id(user_id)
