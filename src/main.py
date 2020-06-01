@@ -20,7 +20,7 @@ from src.test2 import getGif
 from src.shoppingList import ListItems, ShoppingListChooser, DeleteItem, AddItem, SPAddingItem, SPDeletingItem, \
     DeleteList, SPYes, SPNo, MarkItem, SPMarkItemDone
 
-API_TOKEN = '1155345080:AAEh_VkMdKCdDR0jQDb6_O2uDbo8Za6bQzA' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
+API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
@@ -114,6 +114,7 @@ if __name__ == '__main__':
                 ChooseRecipe.process(Statement(call.message.text, call.message.chat.id, None), 0, mongo)
                 ChooseRecipe.response(Statement(call.message.text, call.message.chat.id, None), bot, mongo)
             elif call.data == "add_missing_shopping":
+                bot.send_message(call.message.chat.id, "Added :)")
                 missing_ingredients = mongo.get_missing_ingredients(call.message.chat.id)
                 for missing_ingredient in missing_ingredients:
                     mongo.add_missing_item(call.message.chat.id, missing_ingredient)

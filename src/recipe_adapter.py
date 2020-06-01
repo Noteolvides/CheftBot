@@ -91,7 +91,8 @@ class SeeRecipes(object):
             markup.row_width = 1
             markup.add(InlineKeyboardButton("Resume cooking", callback_data="resume_cooking"))
             markup.add(InlineKeyboardButton("New recipie", callback_data="new_recipies"))
-            bot.send_message(statement.id, "Would you like to finish cooking " + recipe["title"] + "?", reply_markup=markup)
+            bot.send_message(statement.id, "Would you like to finish cooking " + recipe["title"] + "?",
+                             reply_markup=markup)
 
         else:
             newRecipies(statement, bot, mongo)
@@ -135,7 +136,8 @@ class ChooseRecipe(object):
 
         if len(steps) == 0:
             bot.send_message(statement.id, emoji.emojize("Sorry this recipe is not available :cry:", use_aliases=True))
-            bot.send_message(statement.id, emoji.emojize("Uno de nuestros chefs ha puesto un platano en el lector de CDs :monkey:", use_aliases=True))
+            bot.send_message(statement.id, emoji.emojize("One of our chefs has put a banana in the CD player :monkey:",
+                                                         use_aliases=True))
             initial_menu(statement.id, bot)
             mongo.update_user_status(statement.id, ESTADO_MENU)
             return None
@@ -146,10 +148,12 @@ class ChooseRecipe(object):
 
         string_ingredients = ""
         for ingredient in selected_recipe["usedIngredients"]:
-            string_ingredients += emoji.emojize(":white_check_mark: ", use_aliases=True) + ingredient["originalString"] + "\n"
+            string_ingredients += emoji.emojize(":white_check_mark: ", use_aliases=True) + ingredient[
+                "originalString"] + "\n"
 
         for ingredient in selected_recipe["missedIngredients"]:
-            string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient["originalString"] + "\n"
+            string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient[
+                "originalString"] + "\n"
             mongo.add_missing_ingredient(statement.id, ingredient)
 
         if selected_recipe["missedIngredientCount"] == 0:
@@ -157,7 +161,8 @@ class ChooseRecipe(object):
         else:
             markup = InlineKeyboardMarkup()
             markup.row_width = 1
-            markup.add(InlineKeyboardButton("Add missing ingredients to shopping list", callback_data="add_missing_shopping"))
+            markup.add(
+                InlineKeyboardButton("Add missing ingredients to shopping list", callback_data="add_missing_shopping"))
             bot.send_message(statement.id, string_ingredients, reply_markup=markup)
 
         bot.send_message(statement.id, START_COOKING)
@@ -215,7 +220,8 @@ class CookingRecipe(object):
 
                 markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
                 markup.add('prev', 'next')
-                bot.send_message(statement.id, str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+                bot.send_message(statement.id, str(paso_aux + 1) + ". " + steps[i]["steps"][paso_aux]["step"],
+                                 reply_markup=markup)
 
             else:
                 bot.send_message(statement.id,
@@ -292,7 +298,8 @@ class NavigationReciepe(object):
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('prev', 'next')
             bot.send_message(statement.id, "This was the previous step")
-            bot.send_message(statement.id, str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+            bot.send_message(statement.id, str(paso_aux + 1) + ". " + steps[i]["steps"][paso_aux]["step"],
+                             reply_markup=markup)
             mongo.update_number_step(statement.id, paso_actual)
 
         else:
@@ -307,7 +314,8 @@ class NavigationReciepe(object):
             markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
             markup.add('prev', 'next')
             bot.send_message(statement.id, "You are in the first step")
-            bot.send_message(statement.id, str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"], reply_markup=markup)
+            bot.send_message(statement.id, str(paso_aux + 1) + ". " + steps[i]["steps"][paso_aux]["step"],
+                             reply_markup=markup)
 
 
 # Get todos los datos de la receta que se esta preparando, solo si se esta cocinando:
@@ -376,7 +384,8 @@ class MoreInfoRecipe(object):
                 i += 1
             else:
                 break
-        bot.send_message(statement.id, "Your currently step is:\n" + str(paso_aux+1) + ". " + steps[i]["steps"][paso_aux]["step"])
+        bot.send_message(statement.id,
+                         "Your currently step is:\n" + str(paso_aux + 1) + ". " + steps[i]["steps"][paso_aux]["step"])
 
 
 # Para pedir al user que nos puntue la receta que acaba de preparar
@@ -399,7 +408,7 @@ class MealRating(object):
     def response(statement, bot, mongo):
         bot.send_message(statement.id, "Thanks for your review, I'll keep it in my HDD for your next meals! :)")
         # TODO (OPCIONAL) guardar valoraciones de receta para recomendaciones
-        initial_menu(statement.id, bot)
+        initial_menu(statement.id, bot, mongo)
 
         # TODO restar cantidadaes de los ingredientes
         mongo.update_user_status(statement.id, ESTADO_MENU)
