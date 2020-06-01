@@ -152,15 +152,11 @@ class MongoDB:
         self.collection_shopping_list.remove({"_id": user_id})
 
     def mark_item(self, user_id, item):
-        global i
         shopping_list = self.search_list(user_id)
 
         if shopping_list is not None:
             for e in shopping_list["items"]:
                 if e["item"] == item.name and e["done"] == 0:
-                    i = item
-                    i.done = 1
-                    self.delete_item_list(user_id, item)
                     return e
         return None
 

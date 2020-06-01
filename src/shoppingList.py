@@ -281,8 +281,11 @@ class SPMarkItemDone(object):
                 ingredient = json.loads(response.text)[0]
                 item = Item(ingredient["name"], ingredient["amount"], ingredient["unit"], 0)
                 # Eliminar item de la bbdd de la llista de l'usuari
-                text = mongo.mark_item(statement.id, item)
-                if text is not None:
+                e = mongo.mark_item(statement.id, item)
+                if e is not None:
+                    ingredient["amount"] = e["quantity"]
+                    ingredient["unit"] = e["unit"]
+                    mongo.delete_item_list(statement.id, item)
                     mongo.new_ingredient(statement.id, ingredient)
                     bot.send_message(statement.id, "The " + item.name + " " + ITEM_MODIFIED)
                     do_smth_else(statement, bot)
