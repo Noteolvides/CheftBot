@@ -123,12 +123,9 @@ class MongoDB:
             self.collection_shopping_list.insert_one({"_id": user_id, "items": []})
         else:
             for e in shopping_list["items"]:
-                if e["item"] == item.name and e["unit"] == item.unit:
+                if e["done"] == 0 and e["item"] == item.name and e["unit"] == item.unit:
                     item.quantity += e["quantity"]
-                    if e["done"] == 0:
-                        self.delete_item_list(user_id, item)
-                    else:
-                        item["unit"] = e["unit"]
+                    self.delete_item_list(user_id, item)
                     break
 
         return self.collection_shopping_list.find_one_and_update(
@@ -153,23 +150,17 @@ class MongoDB:
     def delete_list(self, user_id):
         self.collection_shopping_list.remove({"_id": user_id})
 
-    def mark_item(self, user_id, item, text):
+    def mark_item(self, user_id, item):
         global i
         shopping_list = self.search_list(user_id)
 
         if shopping_list is not None:
-            exists = 0
             for e in shopping_list["items"]:
                 if e["item"] == item.name and e["done"] == 0:
-                    exists = 1
                     i = item
                     i.done = 1
                     self.delete_item_list(user_id, item)
-                    break
-
-            if exists > 0:
-                self.new_ingredient(user_id, text)
-                return self.add_item(user_id, i)
+                    return e
         return None
 
         # Recipies API______________________________

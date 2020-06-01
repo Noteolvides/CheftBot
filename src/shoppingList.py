@@ -1,9 +1,8 @@
 import emoji
 
 from src.Model.Item import Item
-from src.ingredients_Adapter import similar
+from src.ingredients_Adapter import similar, api
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-import spoonacular as sp
 import json
 
 # Estados Shopping List
@@ -22,7 +21,7 @@ ITEM_MODIFIED = "has been modified!"
 LIST_DELETED = "The list has been deleted"
 CANT_DELETE = "This item doesn't exist in the list"
 LIST_ITEMS = "These are all the items in the shopping list:\n"
-COLS = "     Item:                Quantity:                Unit:\n"
+COL = "   Item               |               Amount               |               Unit               \n"
 NO_ITEMS = emoji.emojize("There are no items in the shopping list :sob:", use_aliases=True)
 
 # Frases Accion
@@ -30,11 +29,10 @@ SP = "Shopping List"
 SP_ADD_ITEM = "Add Item"
 SP_DELETE_ITEM = "Delete Item"
 SP_DELETE_LIST = "Delete Item List"
-SP_MARK_ITEM = "Mark Item As Done"
+SP_MARK_ITEM = "Mark Item As Purchased"
 SP_LIST_ITEMS = "List Items"
 
 MIN = 0.8
-api = sp.API("96597bf47b244aeaa828714933232af4")
 aux_status = 0
 
 
@@ -59,7 +57,7 @@ class ShoppingListChooser(object):
         markup = InlineKeyboardMarkup()
         markup.row_width = 2
         markup.add(InlineKeyboardButton(SP_ADD_ITEM, callback_data="add_item"),
-                   InlineKeyboardButton(SP_MARK_ITEM, callback_data="mark_item"),
+                   InlineKeyboardButton(SP_MARK_ITEM, callback_data="purchase"),
                    InlineKeyboardButton(SP_DELETE_ITEM, callback_data="delete_item"),
                    InlineKeyboardButton(SP_DELETE_LIST, callback_data="delete_list"))
         bot.send_message(statement.id, "What do you want to do", reply_markup=markup)
@@ -84,24 +82,12 @@ class ListItems(object):
         # Devolver todos lo items de lista de un usuario
         global msg
         shopping_list = mongo.search_list(statement.id)
-        print(shopping_list)
         if shopping_list is not None and len(shopping_list["items"]) > 0:
-            msg = LIST_ITEMS + COLS
-
-            i = 1
+            msg = LIST_ITEMS + COL
             for e in shopping_list["items"]:
-                if e["done"] == 1:
-                    msg += \
-                        '[X] ' + e["item"] + "                     " + str(e["quantity"]) + "                     " + e[
-                            "unit"] + "\n"
-                else:
-                    msg += \
-                        '[ ] ' + e["item"] + "                     " + str(e["quantity"]) + "                     " + e[
-                            "unit"] + "\n"
-                i += 1
-
-            markup = InlineKeyboardMarkup()
-            bot.send_message(statement.id, msg, reply_markup=markup)
+                msg += "   " + e["item"] + "               |                    " + str(e["quantity"]) + \
+                       "                  |                 " + e["unit"] + "\n"
+            bot.send_message(statement.id, msg)
 
         else:
             # Lista vacia
@@ -294,17 +280,19 @@ class SPMarkItemDone(object):
                 text = json.loads(response.text)[0]
                 item = Item(text["name"], text["amount"], text["unit"], 0)
                 # Eliminar item de la bbdd de la llista de l'usuari
-                v = mongo.mark_item(statement.id, item, text)
-                if v is not None:
+                text = mongo.mark_item(statement.id, item)
+                if text is not None:
+                    mongo.new_ingredient(statement.id, text)
                     bot.send_message(statement.id, "The " + item.name + " " + ITEM_MODIFIED)
                     do_smth_else(statement, bot)
                     return
+                else:
+                    bot.send_message(statement.id, CANT_DELETE)
+                    return
 
-            bot.send_message(statement.id, "This not seems like to exists")
-            bot.send_message(statement.id, "Could you repeat?")
+            bot.send_message(statement.id, "This not seems like to exists,\n Could you repeat?")
         except:
-            bot.send_message(statement.id, "This not seems like to exists")
-            bot.send_message(statement.id, "Could you repeat?")
+            bot.send_message(statement.id, "This not seems like to exists,\n Could you repeat?")
 
 
 def do_smth_else(statement, bot):
@@ -312,7 +300,7 @@ def do_smth_else(statement, bot):
     markup.row_width = 2
     markup.add(InlineKeyboardButton("Yes", callback_data="yes_sp"),
                InlineKeyboardButton("No", callback_data="no_sp"))
-    bot.send_message(statement.id, "Do you want make more changes on the shopping list?", reply_markup=markup)
+    bot.send_message(statement.id, "Do you want to make more changes on the shopping list?", reply_markup=markup)
 
 
 class SPYes(object):
@@ -326,3 +314,4 @@ class SPNo(object):
     def response(statement, bot, mongo):
         # Volver al estado anterior de la lista
         mongo.update_user_status(statement.id, aux_status)
+        bot.send_message(statement.id, "You have left the shopping list")
