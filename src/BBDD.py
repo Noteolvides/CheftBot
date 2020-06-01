@@ -26,7 +26,8 @@ class MongoDB:
                     "_id": user.token,
                     "username": user.username,
                     "status": user.status,
-                    "possible_ingredient": ""
+                    "possible_ingredient": "",
+                    "ingredients": []
                 }
             )
 

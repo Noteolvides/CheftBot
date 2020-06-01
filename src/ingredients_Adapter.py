@@ -51,6 +51,7 @@ class listIngredient(object):
     @staticmethod
     def can_process(statement, state, mongo):
         if similar(statement.text, "list ingredient") > 0.8 \
+                or similar(statement.text, "ingredient list") > 0.8\
                 or (state == 22 or state == 2) and similar(statement.text, "list") \
                 or similar(statement.text, "show me the ingredients") > 0.8:
             return True
@@ -58,7 +59,10 @@ class listIngredient(object):
 
     @staticmethod
     def process(statement, state, mongo):
-        return max(similar(statement.text, "list ingredient"), similar(statement.text, "ingredient list"), similar(statement.text, "list"))
+        return max(similar(statement.text, "list ingredient"),
+                   similar(statement.text, "ingredient list"),
+                   similar(statement.text, "list"),
+                   similar(statement.text, "show me the ingredients"))
 
     @staticmethod
     def response(statement, bot, mongo):

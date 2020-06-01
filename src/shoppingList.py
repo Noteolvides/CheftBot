@@ -1,6 +1,7 @@
 import emoji
 
 from src.Model.Item import Item
+from src.general_adapter import initial_menu
 from src.ingredients_Adapter import similar, api
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import json
@@ -277,12 +278,12 @@ class SPMarkItemDone(object):
         try:
             response = api.parse_ingredients(statement.text)
             if response.status_code == 200:
-                text = json.loads(response.text)[0]
-                item = Item(text["name"], text["amount"], text["unit"], 0)
+                ingredient = json.loads(response.text)[0]
+                item = Item(ingredient["name"], ingredient["amount"], ingredient["unit"], 0)
                 # Eliminar item de la bbdd de la llista de l'usuari
                 text = mongo.mark_item(statement.id, item)
                 if text is not None:
-                    mongo.new_ingredient(statement.id, text)
+                    mongo.new_ingredient(statement.id, ingredient)
                     bot.send_message(statement.id, "The " + item.name + " " + ITEM_MODIFIED)
                     do_smth_else(statement, bot)
                     return
@@ -315,3 +316,4 @@ class SPNo(object):
         # Volver al estado anterior de la lista
         mongo.update_user_status(statement.id, aux_status)
         bot.send_message(statement.id, "You have left the shopping list")
+        initial_menu(statement, bot, mongo)

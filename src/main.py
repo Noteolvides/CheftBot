@@ -1,5 +1,6 @@
 import telebot
 import emoji
+import re
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -27,7 +28,8 @@ chatter = Chatter(
     [
         addIngredientNameManually, ingredientChosser, listIngredient, addIngredient,
         SeeRecipes, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MoreInfoRecipe, NavigationReciepe, MealRating,
-        ShoppingListChooser, AddItem, DeleteItem, DeleteList, MarkItem, ListItems, SPAddingItem, SPDeletingItem, SPMarkItemDone
+        ShoppingListChooser, AddItem, DeleteItem, DeleteList, MarkItem, ListItems, SPAddingItem, SPDeletingItem,
+        SPMarkItemDone, StopOption
     ],
     mongo)
 
@@ -111,7 +113,7 @@ if __name__ == '__main__':
             elif call.data == "remove_ingredient":
                 regex = r"(?<=Ingredient : )(.*)(?=Quantity : )"
                 test_str = call.message.text.replace('\n', '')
-                matches = regex.search(regex, test_str, regex.MULTILINE)
+                matches = re.search(regex, test_str, re.MULTILINE)
                 ingredient_en = matches.group().encode("ascii", "ignore")
                 ingredient_de = ingredient_en.decode()
                 mongo.delete_ingredient_by_name(call.message.chat.id, ingredient_de)
