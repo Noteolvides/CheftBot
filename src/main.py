@@ -72,16 +72,7 @@ if __name__ == '__main__':
     @bot.callback_query_handler(func=lambda call: True)
     def callback_query(call):
         try:
-
-            # Check the state and change to state if not or yes
-            if call.data == "cb_yes":
-                bot.answer_callback_query(call.id, "Answer is Yes")
-                bot.send_message(call.message.chat.id, "Nice, i am a genius")
-            elif call.data == "cb_no":
-                bot.answer_callback_query(call.id, "Answer is No")
-                bot.send_message(call.message.chat.id, emoji.emojize("Sorry, you will have to add it by hand "
-                                                                     ":disappointed_face:"))
-            elif call.data == "add_ingredients":
+            if call.data == "add_ingredients":
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 addIngredient.response(Statement("", call.message.chat.id, None), bot, mongo)
             elif call.data == "list_ingredients":
