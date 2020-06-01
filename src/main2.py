@@ -20,11 +20,12 @@ def main():
     '''
 
     item = Item("Bacon", 1, "unidad")
-    #mongo.add_item(user.token, item)
+    mongo.add_item(user.token, item)
 
     shopping_list = mongo.search_list(user.token)
     if shopping_list is not None:
-        print(mongo.delete_item_list(user.token, item))
+        #print(mongo.delete_item_list(user.token, item))
+        print(mongo.search_list(user.token))
         return
     mongo.client.close()
 

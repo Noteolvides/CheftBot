@@ -1,4 +1,8 @@
+import json
+
 from pymongo import MongoClient
+
+from src.Model.Item import Item
 
 
 class MongoDB:
@@ -7,6 +11,7 @@ class MongoDB:
         self.db = self.client["ChefBot"]
         self.collection = self.db["CB_User"]
         self.collection_recipe = self.db["CB_Recipies"]
+        self.collection_shopping_list = self.db["CB_SPList"]
 
     # User querys______________________________
     # Con esta función se puedo conocer el usuario con detalle (estado, teclado, ingredientes, etc)
@@ -21,7 +26,8 @@ class MongoDB:
                     "_id": user.token,
                     "username": user.username,
                     "status": user.status,
-                    "possible_ingredient": ""
+                    "possible_ingredient": "",
+                    "ingredients": []
                 }
             )
 
@@ -95,39 +101,70 @@ class MongoDB:
 
     # ShoppingList Querys_______________________
     def search_list(self, user_id):
-        return self.collection_recipe.find_one({"_id": user_id})
+        return self.collection_shopping_list.find_one({"_id": user_id})
+
+    def add_missing_item(self, user_id, item):
+        self.collection_shopping_list.find_one_and_update(
+            {"_id": user_id},
+            {"$push":
+                {"items": {
+                    "item": item["name"],
+                    "quantity": item["amount"],
+                    "unit": item["unit"],
+                    "done": False
+                }
+                }
+            }, upsert=True
+        )
 
     def add_item(self, user_id, item):
         shopping_list = self.search_list(user_id)
 
         if shopping_list is None:
-            self.collection_recipe.insert_one({"_id": user_id, "items": []})
+            self.collection_shopping_list.insert_one({"_id": user_id, "items": []})
         else:
             for e in shopping_list["items"]:
-                if e["item"] == item.name and e["unit"] == item.unit:
+                if e["done"] == 0 and e["item"] == item.name and e["unit"] == item.unit:
                     item.quantity += e["quantity"]
                     self.delete_item_list(user_id, item)
                     break
 
-        self.collection.find_one_and_update(
+        return self.collection_shopping_list.find_one_and_update(
             {"_id": user_id},
             {"$push":
                 {"items": {
                     "item": item.name,
                     "quantity": item.quantity,
                     "unit": item.unit,
+                    "done": item.done
                 }
                 }
             }
         )
 
     def delete_item_list(self, user_id, item):
-        self.collection_recipe.update_one(
-            {"_id": user_id, "items.item": item.name, "items.unit": item.unit}, {"$unset": {"items.$": 1}}
+        self.collection_shopping_list.update_one(
+            {"_id": user_id, "items.item": item.name}, {"$unset": {"items.$": 1}}
         )
-        return self.collection_recipe.update({"_id": user_id}, {"$pull": {"items": None}})
+        return self.collection_shopping_list.update({"_id": user_id}, {"$pull": {"items": None}})
 
-    # Recipies API______________________________
+    def delete_list(self, user_id):
+        self.collection_shopping_list.remove({"_id": user_id})
+
+    def mark_item(self, user_id, item):
+        global i
+        shopping_list = self.search_list(user_id)
+
+        if shopping_list is not None:
+            for e in shopping_list["items"]:
+                if e["item"] == item.name and e["done"] == 0:
+                    i = item
+                    i.done = 1
+                    self.delete_item_list(user_id, item)
+                    return e
+        return None
+
+        # Recipies API______________________________
 
     def insert_new_recipie(self, recipie):
         # TODO: hace falta controlar que no repiten las recipies
@@ -140,8 +177,6 @@ class MongoDB:
     def delete_ingredient_by_name(self, id, nameIngredient):
         self.collection.update_one({"_id": id, "ingredients.name": nameIngredient}, {"$unset": {"ingredients.$": 1}})
         why = self.collection.update({"_id": id}, {"$pull": {"ingredients": None}})
-
-    # ShoppingList Querys_______________________
 
     # Recipies API______________________________
 
@@ -175,22 +210,37 @@ class MongoDB:
         user = self.search_user_by_id(id)
         return user["number_step"]
 
-    def push_choose_recipe(self, token, recipe):
-        self.collection.find_one_and_update(
-            {"_id": token},
-            {"$push": {"choose_recipes": {"$each": [
-                {"recipe_id": recipe.recipe_id,
-                 "title": recipe.title,
-                 "img": recipe.img}
-            ]}}}, upsert=True
-        )
-
     def new_choose_recipe(self, token, recipe):
         self.collection.find_one_and_update(
             {"_id": token},
             {"$push": {"choose_recipes": recipe}
              }
         )
+
+    def set_cooking_recipe(self, id_user, state):
+        self.collection.find_one_and_update(
+            {"_id": id_user},
+            {"$set": {"cooking": state}}, upsert=True
+        )
+
+    def get_cooking_recipe(self, user_id):
+        user = self.search_user_by_id(user_id)
+        return user["cooking"]
+
+    def add_missing_ingredient(self, user_id, missing_ingredient):
+        self.collection.find_one_and_update(
+            {"_id": user_id},
+            {"$push": {"missing_ingredients": missing_ingredient}}
+            , upsert=True
+        )
+
+    def get_missing_ingredients(self, user_id):
+        user = self.search_user_by_id(user_id)
+        return user["missing_ingredients"]
+
+    def delete_missing_ingredients(self, id):
+        self.collection.update_one({"_id": id}, {"$unset": {"missing_ingredients": 1}})
+        why = self.collection.update({"_id": id}, {"$pull": {"missing_ingredients": None}})
 
     def delete_choose_recipes(self, id):
         self.collection.update_one({"_id": id}, {"$unset": {"choose_recipes": 1}})

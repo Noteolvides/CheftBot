@@ -11,8 +11,8 @@ from src.chatter import Statement
 from src.randomEmoji import random_emoji, UNICODE_VERSION
 
 listOfKeys = ["aa9cc6861144497a9ce2ab7ffa864984", "8f73d348bf9d4f01b24731f418c9f6b2",
-              "bba58a1c79234e139e3785c6fbceb313"]
-api = sp.API("bba58a1c79234e139e3785c6fbceb313")
+              "bba58a1c79234e139e3785c6fbceb313", "96597bf47b244aeaa828714933232af4"]
+api = sp.API("96597bf47b244aeaa828714933232af4")
 
 
 def similar(a, b):
@@ -36,7 +36,6 @@ class ingredientChosser(object):
     @staticmethod
     def response(statement, bot, mongo):
         # change state of user
-
         markup = InlineKeyboardMarkup()
         markup.row_width = 2
         markup.add(InlineKeyboardButton("Add ingredient", callback_data="add_ingredients"),
@@ -52,6 +51,7 @@ class listIngredient(object):
     @staticmethod
     def can_process(statement, state, mongo):
         if similar(statement.text, "list ingredient") > 0.8 \
+                or similar(statement.text, "ingredient list") > 0.8\
                 or (state == 22 or state == 2) and similar(statement.text, "list") \
                 or similar(statement.text, "show me the ingredients") > 0.8:
             return True
@@ -59,7 +59,10 @@ class listIngredient(object):
 
     @staticmethod
     def process(statement, state, mongo):
-        return max(similar(statement.text, "list ingredient"), similar(statement.text, "ingredient list"), similar(statement.text, "list"))
+        return max(similar(statement.text, "list ingredient"),
+                   similar(statement.text, "ingredient list"),
+                   similar(statement.text, "list"),
+                   similar(statement.text, "show me the ingredients"))
 
     @staticmethod
     def response(statement, bot, mongo):
