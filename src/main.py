@@ -128,7 +128,7 @@ if __name__ == '__main__':
             elif call.data == "delete_list":
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 DeleteList.response(Statement("", call.message.chat.id, None), bot, mongo)
-            elif call.data == "purchase":
+            elif call.data == "mark_purchase":
                 bot.delete_message(call.message.chat.id, call.message.message_id)
                 MarkItem.response(Statement("", call.message.chat.id, None), bot, mongo)
             elif call.data == "list_items":

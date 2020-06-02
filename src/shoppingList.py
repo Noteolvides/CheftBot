@@ -22,7 +22,7 @@ ITEM_MODIFIED = "has been modified!"
 LIST_DELETED = "The list has been deleted"
 CANT_DELETE = "This item doesn't exist in the list"
 LIST_ITEMS = "These are all the items in the shopping list:\n"
-COL = "   Item               |               Amount               |               Unit               \n"
+COL = "   Item         |         Amount         |         Unit\n"
 NO_ITEMS = emoji.emojize("There are no items in the shopping list :sob:", use_aliases=True)
 
 # Frases Accion
@@ -30,7 +30,8 @@ SP = "Shopping List"
 SP_ADD_ITEM = "Add Item"
 SP_DELETE_ITEM = "Delete Item"
 SP_DELETE_LIST = "Delete Item List"
-SP_MARK_ITEM = "Mark Item As Purchased"
+SP_MARK_ITEM = "Mark Purchased"
+SP_PURCHASE = "Purchased"
 SP_LIST_ITEMS = "List Items"
 
 MIN = 0.8
@@ -58,7 +59,7 @@ class ShoppingListChooser(object):
         markup = InlineKeyboardMarkup()
         markup.row_width = 2
         markup.add(InlineKeyboardButton(SP_ADD_ITEM, callback_data="add_item"),
-                   InlineKeyboardButton(SP_MARK_ITEM, callback_data="purchase"),
+                   InlineKeyboardButton(SP_MARK_ITEM, callback_data="mark_purchase"),
                    InlineKeyboardButton(SP_DELETE_ITEM, callback_data="delete_item"),
                    InlineKeyboardButton(SP_DELETE_LIST, callback_data="delete_list"))
         bot.send_message(statement.id, "What do you want to do", reply_markup=markup)
@@ -86,8 +87,8 @@ class ListItems(object):
         if shopping_list is not None and len(shopping_list["items"]) > 0:
             msg = LIST_ITEMS + COL
             for e in shopping_list["items"]:
-                msg += "   " + e["item"] + "               |                    " + str(e["quantity"]) + \
-                       "                  |                 " + e["unit"] + "\n"
+                msg += "   " + e["item"] + "        |         " + str(e["quantity"]) + \
+                       "                  |       " + e["unit"] + "\n"
             bot.send_message(statement.id, msg)
 
         else:
@@ -171,13 +172,13 @@ class MarkItem(object):
 
     @staticmethod
     def can_process(statement, state, mongo):
-        if similar(statement.text, SP_MARK_ITEM) > MIN:
+        if similar(statement.text, SP_PURCHASE) > MIN:
             return True
         return False
 
     @staticmethod
     def process(statement, state, mongo):
-        return similar(statement.text, SP_MARK_ITEM)
+        return similar(statement.text, SP_PURCHASE)
 
     @staticmethod
     def response(statement, bot, mongo):
@@ -247,9 +248,9 @@ class SPDeletingItem(object):
                 # Eliminar item de la bbdd de la llista de l'usuari
                 if mongo.delete_item_list(statement.id, item)["nModified"] > 0:
                     bot.send_message(statement.id, "The " + item.name + " " + ITEM_DELETED)
-                    do_smth_else(statement, bot)
                 else:
                     bot.send_message(statement.id, CANT_DELETE)
+                do_smth_else(statement, bot)
             else:
                 bot.send_message(statement.id, "This not seems like to exists")
                 bot.send_message(statement.id, "Could you repeat?")
@@ -319,4 +320,4 @@ class SPNo(object):
         # Volver al estado anterior de la lista
         mongo.update_user_status(statement.id, aux_status)
         bot.send_message(statement.id, "You have left the shopping list")
-        initial_menu(statement, bot, mongo)
+        initial_menu(statement.id, bot, mongo)
