@@ -20,8 +20,9 @@ from src.chatter import Chatter
 from src.chatter import Statement
 from src.shoppingList import ListItems, ShoppingListChooser, DeleteItem, AddItem, SPAddingItem, SPDeletingItem, \
     DeleteList, SPYes, SPNo, MarkItem, SPMarkItemDone
-
-API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
+# '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58' @PruebaChefBot
+# '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs' @NoteolvidesBot
+API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
