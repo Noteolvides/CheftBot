@@ -31,7 +31,7 @@ RATE_MEAL = "How would you rate this meal?"
 
 NUMBER_RECIPES = 3
 
-api = sp.API("96597bf47b244aeaa828714933232af4")
+api = sp.API("bba58a1c79234e139e3785c6fbceb313")
 min = 0.7
 
 
