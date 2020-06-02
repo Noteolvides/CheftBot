@@ -4,7 +4,6 @@ El token que esta, es un token vinculado a el siguiente chatbot en telegram @Not
 Si quieres resetear el Bot comand /start @NoteolvidesBot
 
 Animo cocinando
-
 ### Authors
 * Gerard Melgares
 * Gustavo Gómez López De San Román
