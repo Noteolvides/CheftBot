@@ -16,6 +16,9 @@ Version: python3
 
 Project program: pyCharm
 
+Docker: you need to have docker installed. To configure and start the BBDD, use "make run" in the database folder.
+At the end remember to stop the docker with "make stop".
+
 #### Libraries:
 * telebot
 * emoji
@@ -31,6 +34,8 @@ Project program: pyCharm
 * random
 * bisect
 * unicodedata
+* requests
+
 ### Running the program
 ####Menu
 ```

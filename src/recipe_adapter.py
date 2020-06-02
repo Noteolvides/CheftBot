@@ -7,7 +7,7 @@ import spoonacular as sp
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from src.test import EsperaQueue
+from src.EsperaQueue import EsperaQueue
 from src.general_adapter import initial_menu
 
 ESTADO_MENU = 0

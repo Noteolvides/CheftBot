@@ -1,3 +1,6 @@
+import json
+
+import requests
 import telebot
 import emoji
 import re
@@ -11,16 +14,14 @@ from src.general_adapter import StopOption
 from src.logger import startLogger
 from src.ingredients_Adapter import addIngredient, ingredientChosser, addIngredientNameManually, listIngredient, \
     yesIngredient, noIngredient, removeIngredient
-from src.message_queue import QueueGestor
 from src.recipe_adapter import SeeRecipes, NavigationReciepe, ChooseRecipe, MoreInfoRecipe, CookingRecipe, MealRating, \
     newRecipies, ESTADO_COOKING
 from src.chatter import Chatter
 from src.chatter import Statement
-from src.test2 import getGif
 from src.shoppingList import ListItems, ShoppingListChooser, DeleteItem, AddItem, SPAddingItem, SPDeletingItem, \
     DeleteList, SPYes, SPNo, MarkItem, SPMarkItemDone
 
-API_TOKEN = '852896929:AAHJJVUoUMO6hTxYV3fEaqn2tjNOn_wmzfs' # '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
+API_TOKEN = '1037754398:AAEKk_zp4e686AmN2s8ZcHqPhPDoTxULB58'
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 mongo = MongoDB()
@@ -36,8 +37,18 @@ chatter = Chatter(
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
 }
-message_queue = QueueGestor(bot)
-# message_queue.startQueue()
+
+
+def getGif(search_term):
+    apikey = "1ZOT88VE51FT"  # test value
+    lmt = 1
+    r = requests.get(
+        "https://api.tenor.com/v1/random?q=%s&key=%s&limit=%s" % (search_term, apikey, lmt))
+    if r.status_code == 200:
+        gifs = json.loads(r.content)
+        return gifs["results"][0]["url"]
+    else:
+        gifs = "https://media1.tenor.com/images/335c59743ad925b364bc0615b681c0c0/tenor.gif"
 
 
 if __name__ == '__main__':
