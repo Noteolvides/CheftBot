@@ -99,6 +99,12 @@ class MongoDB:
             {"$inc": {"ingredients.$.amount": ingredient["amount"]}}
         )
 
+    def use_ingredient(self, id, ingredient):
+        return self.collection.update(
+            {"_id": id, "ingredients.name": ingredient["name"]},
+            {"$set": {"ingredients.$.amount": ingredient["amount"]}}
+        )
+
     # ShoppingList Querys_______________________
     def search_list(self, user_id):
         return self.collection_shopping_list.find_one({"_id": user_id})

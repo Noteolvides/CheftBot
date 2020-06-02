@@ -145,18 +145,35 @@ class ChooseRecipe(object):
         # TODO revisar/plantear otra manera de ver los pasos para que no sea tan tocho seguido
         # bot.send_message(statement.id, "Lets take a look to the ingredients")
         bot.send_message(statement.id, INGREDIENTS_RECIPE)
+        ingredients = mongo.get_ingredients(statement.id)
 
         string_ingredients = ""
         for ingredient in selected_recipe["usedIngredients"]:
             string_ingredients += emoji.emojize(":white_check_mark: ", use_aliases=True) + ingredient[
                 "originalString"] + "\n"
 
-        for ingredient in selected_recipe["missedIngredients"]:
-            string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient[
-                "originalString"] + "\n"
-            mongo.add_missing_ingredient(statement.id, ingredient)
+        missing = False
+        for missed_ingredient in selected_recipe["missedIngredients"]:
+            found = False
+            for ingredient in ingredients:
+                if similar(missed_ingredient["name"], ingredient["name"]) > 0.8:
+                    string_ingredients += emoji.emojize(":white_check_mark: ", use_aliases=True) + ingredient[
+                        "originalName"] + "\n"
+                    found = True
 
-        if selected_recipe["missedIngredientCount"] == 0:
+                    break
+            if not found:
+                string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + missed_ingredient["original"] + "\n"
+                mongo.add_missing_ingredient(statement.id, missed_ingredient)
+                missing = True
+
+
+        # for ingredient in selected_recipe["missedIngredients"]:
+        #     string_ingredients += emoji.emojize(":negative_squared_cross_mark: ", use_aliases=True) + ingredient[
+        #         "originalString"] + "\n"
+        #     mongo.add_missing_ingredient(statement.id, ingredient)
+
+        if not missing:
             bot.send_message(statement.id, string_ingredients)
         else:
             markup = InlineKeyboardMarkup()
@@ -240,15 +257,16 @@ class CookingRecipe(object):
 
                 for recipe_ingredient in recipe["usedIngredients"]:
                     for user_ingredient in user_ingredients:
-                        if similar(user_ingredient["name"], recipe_ingredient["name"]) > 0.5:
+                        if similar(user_ingredient["name"], recipe_ingredient["name"]) > 0.6:
                             if user_ingredient["unit"] == recipe_ingredient["unit"] \
                                     and user_ingredient["amount"] > recipe_ingredient["amount"]:
                                 user_ingredient["amount"] -= recipe_ingredient["amount"]
-                                mongo.update_ingredient(statement.id, user_ingredient)
+                                print(mongo.use_ingredient(statement.id, user_ingredient))
                             else:
-                                mongo.delete_ingredient_by_name(statement.id, recipe_ingredient["name"])
+                                print(mongo.delete_ingredient_by_name(statement.id, recipe_ingredient["name"]))
 
-                            user_ingredients.remove(user_ingredient)
+                            break
+                            # user_ingredients.remove(user_ingredient)
 
                 mongo.set_cooking_recipe(statement.id, False)
 
