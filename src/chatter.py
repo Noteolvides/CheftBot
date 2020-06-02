@@ -28,7 +28,6 @@ class Chatter(object):
         return win_adapter
 
     def generateResponse(self, win, statement, bot):
-        # TODO la respuesta tambien cambiaria segun el estado de la conversacion
         if win == -1:
             TextNotFound.response(statement, bot, self.mongo)
         else:

@@ -142,7 +142,6 @@ class ChooseRecipe(object):
             mongo.update_user_status(statement.id, ESTADO_MENU)
             return None
 
-        # TODO revisar/plantear otra manera de ver los pasos para que no sea tan tocho seguido
         # bot.send_message(statement.id, "Lets take a look to the ingredients")
         bot.send_message(statement.id, INGREDIENTS_RECIPE)
         ingredients = mongo.get_ingredients(statement.id)
@@ -233,7 +232,6 @@ class CookingRecipe(object):
 
             if paso_aux != len(steps[i]["steps"]):
                 # gran variedad de nombres la verdad :(
-                # TODO Plantearse poner el calculo de step en una func porque se repite mucho
 
                 markup = types.ReplyKeyboardMarkup(one_time_keyboard=True)
                 markup.add('prev', 'next')
@@ -243,7 +241,6 @@ class CookingRecipe(object):
             else:
                 bot.send_message(statement.id,
                                  emoji.emojize("Congratulations you have finished the recipe :clap:", use_aliases=True))
-                # todo sad porque no he encontrado chef https://www.webfx.com/tools/emoji-cheat-sheet/
                 bot.send_message(statement.id, emoji.emojize("Bon apettite :ok_hand:", use_aliases=True))
                 bot.send_animation(statement.id,
                                    "https://tenor.com/view/delicious-gif-7851132")
@@ -281,7 +278,6 @@ class CookingRecipe(object):
 
 # Para poder tirar hacia atras en un paso de receta
 # Solo cuando se esta cocinando asi no coincidira con otras cosas
-# TODO pensar que mas funcionaclidades de navegacion pueden venir bien
 class NavigationReciepe(object):
     def __init__(self, **kwargs):
         pass
@@ -340,7 +336,6 @@ class NavigationReciepe(object):
 # ver steps
 # ver utensilios
 # ver ingredientes
-# TODO ver como formatear bonito toda esta info
 class MoreInfoRecipe(object):
     def __init__(self, **kwargs):
         pass
@@ -425,8 +420,5 @@ class MealRating(object):
     @staticmethod
     def response(statement, bot, mongo):
         bot.send_message(statement.id, "Thanks for your review, I'll keep it in my HDD for your next meals! :)")
-        # TODO (OPCIONAL) guardar valoraciones de receta para recomendaciones
         initial_menu(statement.id, bot, mongo)
-
-        # TODO restar cantidadaes de los ingredientes
         mongo.update_user_status(statement.id, ESTADO_MENU)

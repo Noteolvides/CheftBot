@@ -49,7 +49,6 @@ class MongoDB:
         return user["possible_ingredient"]
 
     # Pantry Querys_____________________________
-    # TODO: comprobar antes si el ingrediente que se quiere añadir existe
     def new_ingredient(self, id, ingredientInput):
         self.collection.find_one_and_update(
             {"_id": id},
@@ -62,7 +61,6 @@ class MongoDB:
         )
 
     def search_ingredient(self, user, ingredient):
-        # fixme: no encuetra nah de nah
         print("jajas")
 
     def get_ingredients(self, id):
@@ -169,7 +167,6 @@ class MongoDB:
         # Recipies API______________________________
 
     def insert_new_recipie(self, recipie):
-        # TODO: hace falta controlar que no repiten las recipies
         self.collection_recipe.insert({recipie})
         pass
 
